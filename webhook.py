@@ -24,7 +24,7 @@ def webhook():
         return "Ignored (not master)", 200
 
     result = subprocess.run(
-        "cd /home/ubuntu/CCTBv4 && "
+        "cd /home/ubuntu/claude-code-trading-bot && "
         "git pull origin master && "
         "source venv/bin/activate && "
         "pip install -r requirements.txt -q && "
