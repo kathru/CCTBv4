@@ -1,10 +1,10 @@
 @echo off
 echo ================================================
-echo  Instalando Trading Bot como Servico Windows
+echo  Instalando CCTBv4 como Servico Windows
 echo ================================================
 
 set PYTHON=C:\Users\chris\AppData\Local\Programs\Python\Python312\python.exe
-set BOT_DIR=D:\Claude Code Trading bot
+set BOT_DIR=D:\CCTBv4
 set SERVICE=TradingBot
 
 :: Remove servico anterior se existir
@@ -21,7 +21,7 @@ nssm set %SERVICE% AppRotateOnline 1
 nssm set %SERVICE% AppRotateBytes 10485760
 nssm set %SERVICE% Start SERVICE_AUTO_START
 nssm set %SERVICE% AppRestartDelay 5000
-nssm set %SERVICE% Description "Claude Code Trading Bot - Coinbase Paper Trading"
+nssm set %SERVICE% Description "Claude Code Trading Bot V4 - OKX Paper Trading"
 
 :: Inicia o servico
 nssm start %SERVICE%
