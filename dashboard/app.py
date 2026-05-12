@@ -634,6 +634,10 @@ state = {
     "news_reason":      "",
     "exec_stats":       {},
     "pending_orders":   [],
+    "blocked_log":      [],
+    "exposure":         {"total_pct": 0.0, "by_asset": {}},
+    "drawdown_intraday":0.0,
+    "n_trades_warning": True,
     "next_news_event":  None,
     "market_breadth":   {
         "alts_above_ema50_pct": None, "btc_dominance": None,
@@ -861,19 +865,47 @@ def get_rsi_value(candles, period=14):
         return 50.0
 
 
-def _record_trade(side, pair, qty, price, usd, strategy):
-    symbol = pair.split("-")[0]
-    fee = usd * TAKER_FEE if side == "BUY" else usd / (1 - TAKER_FEE) * TAKER_FEE
+def _record_trade(side, pair, qty, price, usd, strategy,
+                  score=None, reason=None, exit_type=None, entry_price=None):
+    fee    = FEE.taker * usd
+    pnl_net = None
+    if side == "SELL" and entry_price and entry_price > 0:
+        gross_pnl = (price - entry_price) / entry_price * usd
+        pnl_net   = round(gross_pnl - fee, 4)
+
     log_trade(logger, side, pair, qty, price, usd, strategy)
     notify_trade(side, pair, qty, price, usd)
     state["trades"].insert(0, {
-        "time": datetime.now().strftime("%H:%M:%S"),
-        "side": side, "pair": pair,
-        "price": price, "usd": usd,
-        "fee":  round(fee, 6),
-        "strategy": strategy,
+        "time":       datetime.now().strftime("%H:%M:%S"),
+        "ts":         int(time.time()),
+        "side":       side,
+        "pair":       pair,
+        "price":      price,
+        "usd":        usd,
+        "fee":        round(fee, 6),
+        "fee_pct":    round(fee / usd * 100, 4) if usd > 0 else 0,
+        "pnl_net":    pnl_net,
+        "strategy":   strategy,
+        "score":      round(score, 3) if score is not None else None,
+        "reason":     reason or "",
+        "exit_type":  exit_type or "",
+        "entry_price": entry_price,
     })
-    state["trades"] = state["trades"][:50]
+    state["trades"] = state["trades"][:100]
+
+
+_blocked_log: list = []   # log de tentativas bloqueadas (últimas 50)
+
+def _record_block(pair: str, reason: str, score: float = 0.0):
+    """Registra trade bloqueado para exibição no dashboard."""
+    _blocked_log.insert(0, {
+        "time":   datetime.now().strftime("%H:%M:%S"),
+        "ts":     int(time.time()),
+        "pair":   pair,
+        "reason": reason,
+        "score":  round(score, 3),
+    })
+    del _blocked_log[30:]   # mantém últimas 30
 
 
 async def trading_loop():
@@ -882,6 +914,7 @@ async def trading_loop():
     while True:
         state["cycle"] = _current_cycle()
         now_str = datetime.now().strftime("%H:%M:%S")
+        _today_start_ts = int(datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
 
         state["last_update"]    = now_str
         state["cycle_start_ts"] = int(time.time())
@@ -1128,9 +1161,23 @@ async def trading_loop():
                 _today = datetime.now().strftime("%Y-%m-%d")
                 _v4_key = f"V4:{pair}"
                 _breadth_score = (_breadth.score if _breadth else 1.0)
-                _breadth_block = _breadth_score < 0.40   # DANGER — bloqueia compras
+                _breadth_block = _breadth_score < 0.40
                 if _breadth_block:
-                    logger.info(f"[MarketBreadth] BLOQUEIO de compra — score={_breadth_score:.2f} ({_breadth.label if _breadth else 'N/A'})")
+                    logger.info(f"[MarketBreadth] BLOQUEIO — score={_breadth_score:.2f}")
+                    _record_block(pair, f"Market Breadth DANGER ({_breadth_score:.0%})", _v4_score)
+
+                # Log de bloqueios específicos quando V4 quer comprar mas há impedimento
+                if _v4_decision.get("decision") == "BUY" and _v4_slot.get("qty", 0) == 0:
+                    if _breadth_block:
+                        pass   # já registrado acima
+                    elif _daily_trade_count.get(_today, 0) >= MAX_DAILY_TRADES:
+                        _record_block(pair, f"Limite diário atingido ({MAX_DAILY_TRADES} trades)", _v4_score)
+                    elif sum(1 for s in strategy_slots.values() if s.get("qty", 0) > 0) >= MAX_OPEN_SLOTS:
+                        _record_block(pair, f"Max posições abertas ({MAX_OPEN_SLOTS})", _v4_score)
+                    elif time.time() - last_buy_time.get(_v4_key, 0) <= BUY_COOLDOWN_SECONDS:
+                        _cooldown_rem = int(BUY_COOLDOWN_SECONDS - (time.time() - last_buy_time.get(_v4_key, 0)))
+                        _record_block(pair, f"Cooldown ativo ({_cooldown_rem}s restantes)", _v4_score)
+
                 if (
                     _v4_decision.get("decision") == "BUY"
                     and not _breadth_block
@@ -1165,7 +1212,9 @@ async def trading_loop():
                             }
                             last_buy_time[_v4_key] = time.time()
                             _daily_trade_count[_today] = _daily_trade_count.get(_today, 0) + 1
-                            _record_trade("BUY", pair, _v4_qty, price, _v4_size_usd, "V4:signal")
+                            _record_trade("BUY", pair, _v4_qty, price, _v4_size_usd, "V4:signal",
+                                          score=_v4_score,
+                                          reason=_v4_decision.get("reason", ""))
                             logger.info(f"[V4][{pair}] ✅ BUY ${_v4_size_usd:.2f} @ ${price:,.2f} | sl={_v4_sl:.2f}")
 
                 # ── V4 SELL execution ─────────────────────────────────────────
@@ -1183,7 +1232,11 @@ async def trading_loop():
                         score=_v4_score, regime=_v4_regime,
                     ):
                         strategy_slots[_v4_key] = _empty_slot()
-                        _record_trade("SELL", pair, _v4_qty, price, _v4_sell_usd, _exit_label)
+                        _record_trade("SELL", pair, _v4_qty, price, _v4_sell_usd, _exit_label,
+                                      score=_v4_score,
+                                      reason=_v4_decision.get("reason", ""),
+                                      exit_type=_exit_type,
+                                      entry_price=_v4_entry)
                         logger.info(f"[V4][{pair}] ✅ SELL ${_v4_sell_usd:.2f} @ ${price:,.2f} "
                                     f"| pnl={_v4_pnl:.2f} | {_exit_label} | {_v4_decision.get('reason','')}")
 
@@ -1301,6 +1354,34 @@ async def trading_loop():
         _next_sp = _seconds_to_next_sp_hour()
         state["next_cycle_ts"]    = int(time.time() + _next_sp)
         state["cycle_interval"]   = CYCLE_INTERVAL   # mantido para compatibilidade JS
+
+        # ── Métricas de realidade operacional ────────────────────────────────
+        _port_val = engine.portfolio_value()
+        # Exposição: quanto do portfolio está em posições abertas
+        _held_usd = sum(
+            engine.holdings.get(p.split("-")[0], 0) * state["prices"].get(p, {}).get("price", 0)
+            for p in PAIRS
+        )
+        _exp_by_asset = {
+            p: round(engine.holdings.get(p.split("-")[0], 0)
+                     * state["prices"].get(p, {}).get("price", 0)
+                     / _port_val * 100, 1) if _port_val > 0 else 0.0
+            for p in PAIRS
+        }
+        state["exposure"] = {
+            "total_pct":  round(_held_usd / _port_val * 100, 1) if _port_val > 0 else 0.0,
+            "by_asset":   _exp_by_asset,
+        }
+        # Drawdown intraday: menor portfolio hoje vs máximo hoje
+        _today_hist = [h for h in state.get("history", []) if h.get("ts", 0) > _today_start_ts]
+        if _today_hist:
+            _peak_today = max(h["v"] for h in _today_hist)
+            _curr_today = _today_hist[-1]["v"] if _today_hist else _port_val
+            state["drawdown_intraday"] = round((_curr_today - _peak_today) / _peak_today * 100, 2) if _peak_today > 0 else 0.0
+        # Blocked log
+        state["blocked_log"]      = _blocked_log[:20]
+        # Amostra insuficiente
+        state["n_trades_warning"] = len(engine.trades) < 30
 
         # Processa ordens limit pendentes contra preços atuais
         if hasattr(engine, "tick"):
