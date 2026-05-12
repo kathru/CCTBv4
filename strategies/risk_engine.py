@@ -286,12 +286,22 @@ def run_monte_carlo(
     dd_95_idx = int(len(max_dds) * 0.95)
     dd_95_worst = max_dds[min(dd_95_idx, len(max_dds) - 1)]
 
-    # Sharpe rolling (últimos 20 trades)
-    recent_20 = returns[-20:]
-    if len(recent_20) > 1:
-        mean_20 = sum(recent_20) / len(recent_20)
-        std_20  = statistics.stdev(recent_20)
-        sharpe  = (mean_20 / std_20) * math.sqrt(8760 / 20) if std_20 > 0 else 0.0
+    # Sharpe rolling — calculado sobre retornos diários do portfolio, não por trade.
+    # Retorno diário = variação do valor do portfolio em 24h de retornos de trades.
+    # Mínimo 5 dias de dados para ser significativo.
+    if len(returns) >= 5:
+        # Agrupa retornos em janelas de ~4 trades (proxy de 1 dia com ciclo 15min ≈ 96 ciclos)
+        chunk = max(1, len(returns) // 10)
+        daily = []
+        for i in range(0, len(returns) - chunk, chunk):
+            daily.append(sum(returns[i:i + chunk]))
+        if len(daily) >= 3:
+            mean_d = sum(daily) / len(daily)
+            std_d  = statistics.stdev(daily)
+            sharpe = (mean_d / std_d) * math.sqrt(252) if std_d > 0 else 0.0
+            sharpe = max(-5.0, min(5.0, sharpe))  # clamp razoável
+        else:
+            sharpe = 0.0
     else:
         sharpe = 0.0
 
