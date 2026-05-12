@@ -6,6 +6,7 @@ colorama
 plyer
 PyJWT[crypto]
 cryptography
+flask
 fastapi
 uvicorn
 jinja2
