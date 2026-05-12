@@ -1,0 +1,12 @@
+requests
+pandas
+numpy
+pandas-ta
+python-dotenv
+colorama
+plyer
+PyJWT[crypto]
+cryptography
+fastapi
+uvicorn
+jinja2

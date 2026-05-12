@@ -1,0 +1,2011 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude Code Trading Bot</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { colors: {
+        dark: { 900: '#0d1117', 800: '#161b22', 700: '#21262d', 600: '#30363d' }
+      }}}
+    }
+  </script>
+  <style>
+    body { background: #0d1117; font-family: 'Inter', system-ui, sans-serif; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; }
+    .pulse-dot { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .signal-buy  { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); }
+    .signal-sell { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+    .signal-hold { background: rgba(156,163,175,0.1); color: #9ca3af; border: 1px solid rgba(156,163,175,0.2); }
+    .trade-buy  { border-left: 3px solid #4ade80; }
+    .trade-sell { border-left: 3px solid #f87171; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #0d1117; }
+    ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+    .period-btn { background: transparent; color: #6b7280; border: 1px solid #30363d; }
+    .period-btn:hover { color: #d1d5db; border-color: #6b7280; }
+    .period-btn.active { background: #21262d; color: #e5e7eb; border-color: #6b7280; }
+    .candle-pair-btn { background: transparent; color: #6b7280; border: 1px solid #30363d; }
+    .candle-pair-btn:hover { color: #d1d5db; border-color: #6b7280; }
+    .candle-pair-btn.active { background: #f97316; color: #fff; border-color: #f97316; }
+    .candle-tf-btn { background: transparent; color: #6b7280; border: 1px solid #30363d; }
+    .candle-tf-btn:hover { color: #d1d5db; border-color: #6b7280; }
+    .candle-tf-btn.active { background: #21262d; color: #e5e7eb; border-color: #6b7280; }
+    .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+    .scrollbar-none::-webkit-scrollbar { display: none; }
+    /* Regime badges */
+    .regime-trending { background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.35); }
+    .regime-ranging  { background: rgba(234,179,8,0.15);  color: #facc15; border: 1px solid rgba(234,179,8,0.35); }
+    .regime-neutral  { background: rgba(107,114,128,0.15);color: #9ca3af; border: 1px solid rgba(107,114,128,0.3); }
+    /* Market Mode global banner */
+    .mode-bull  { background: rgba(34,197,94,0.12);  color: #4ade80; border: 1px solid rgba(34,197,94,0.35); }
+    .mode-chop  { background: rgba(234,179,8,0.12);  color: #facc15; border: 1px solid rgba(234,179,8,0.35); }
+    .mode-bear  { background: rgba(239,68,68,0.12);  color: #f87171; border: 1px solid rgba(239,68,68,0.35); }
+    /* Score gate badges */
+    .score-blocked  { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.35); }
+    .score-reduced  { background: rgba(251,146,60,0.15); color: #fb923c; border: 1px solid rgba(251,146,60,0.35); }
+    .score-normal   { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.35); }
+    .score-aggr     { background: rgba(34,197,94,0.15);  color: #4ade80; border: 1px solid rgba(34,197,94,0.35); }
+    /* Tooltip for strategy filters */
+    .strat-tooltip { position: relative; }
+    .strat-tooltip:hover .strat-tooltip-box { display: block; }
+    .strat-tooltip-box { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+      background: #1c2128; border: 1px solid #30363d; border-radius: 8px; padding: 8px 10px;
+      white-space: nowrap; z-index: 50; min-width: 180px; }
+    .strat-tooltip-box::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+      border: 5px solid transparent; border-top-color: #30363d; }
+  </style>
+</head>
+<body class="min-h-screen text-gray-100">
+
+  <!-- ── Header ── -->
+  <header class="border-b border-gray-800 px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-50"
+          style="background:#0d1117cc;backdrop-filter:blur(12px)">
+    <div class="flex items-center gap-3">
+      <img src="/static/favicon.svg" class="w-8 h-8 rounded-lg" alt="Claude">
+      <div>
+        <!-- Mobile: nome curto | Desktop: nome completo -->
+        <h1 class="font-bold text-white text-lg leading-none">
+          <span class="sm:hidden">CC Trading Bot <span class="text-gray-600 text-xs font-normal">v3.5.17</span></span>
+          <span class="hidden sm:inline">Claude Code Trading Bot <span class="text-gray-600 text-xs font-normal">v3.5.17 (11/05/2026)</span></span>
+        </h1>
+        <p class="text-xs text-gray-500 hidden sm:block">OKX · Paper Mode</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 sm:gap-6">
+      <!-- USD/BRL — oculto no mobile -->
+      <div class="text-right hidden sm:block">
+        <p class="text-[10px] text-gray-500">USD / BRL</p>
+        <p id="usd-brl-rate" class="text-sm text-yellow-400 font-mono font-bold">R$ —</p>
+      </div>
+      <!-- Última atualização — oculto no mobile -->
+      <div class="text-right hidden sm:block">
+        <p class="text-xs text-gray-500">Última atualização</p>
+        <p id="last-update" class="text-sm text-gray-300 font-mono">--:--:--</p>
+      </div>
+      <!-- Próximo ciclo — visível em todos os tamanhos -->
+      <div class="text-right">
+        <p class="text-[10px] text-gray-500 hidden sm:block">Próximo ciclo <span id="header-cycle-count" class="text-gray-600">#—</span></p>
+        <p id="header-cycle-timer" class="text-sm text-indigo-400 font-mono font-bold">--</p>
+      </div>
+      <!-- Market Regime global — visível em todos os tamanhos -->
+      <div id="header-market-mode" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full mode-chop">
+        <span id="header-mode-icon" class="text-sm">↔</span>
+        <span id="header-mode-label" class="text-sm font-bold">CHOP</span>
+      </div>
+      <!-- Ativo — visível em todos os tamanhos -->
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/30">
+        <span class="w-2 h-2 rounded-full bg-green-500 pulse-dot"></span>
+        <span class="text-green-400 text-sm font-medium">Ativo</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
+
+    <!-- ── Portfolio Summary ── -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+      <div class="card px-4 py-3">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Portfolio Total</p>
+        <p id="portfolio-total" class="text-lg font-bold text-white leading-tight">R$ —</p>
+        <p id="portfolio-total-usd" class="text-[10px] text-gray-500 mt-0.5">US$ — · Inic: R$ 5.000</p>
+      </div>
+      <div class="card px-4 py-3">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">P&L</p>
+        <p id="pnl-value" class="text-lg font-bold text-gray-400 leading-tight">R$ 0,00</p>
+        <p id="pnl-pct" class="text-[10px] text-gray-500 mt-0.5">+0.00%</p>
+      </div>
+      <div class="card px-4 py-3">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Saldo Disponível</p>
+        <p id="balance-brl" class="text-lg font-bold text-white leading-tight">R$ —</p>
+        <p id="balance-usd" class="text-[10px] text-gray-500 mt-0.5">US$ —</p>
+      </div>
+      <div class="card px-4 py-3">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Taxas Pagas (OKX)</p>
+        <p id="total-fees" class="text-lg font-bold text-orange-400 leading-tight">R$ 0,00</p>
+        <p id="total-fees-usd" class="text-[10px] text-gray-500 mt-0.5"><span id="current-fee-rate">—</span>/trade</p>
+      </div>
+      <div class="card px-4 py-3">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Trades</p>
+        <p id="trade-count" class="text-lg font-bold text-white leading-tight">0</p>
+        <p class="text-[10px] text-gray-500 mt-0.5">Paper trades</p>
+      </div>
+      <div class="card px-4 py-3">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Fear &amp; Greed</p>
+        <p id="fg-value" class="text-lg font-bold leading-tight text-gray-300">—</p>
+        <p id="fg-label" class="text-[10px] text-gray-500 mt-0.5">—</p>
+      </div>
+    </div>
+
+    <!-- ── Painel de Estratégias ── -->
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-semibold text-white">Painel de estratégias</h3>
+        <span id="strategy-panel-subtitle" class="text-xs text-gray-500">P&L em trades</span>
+      </div>
+      <div id="strategy-panel" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+    </div>
+
+    <!-- ── Cards de Criptos ── -->
+    <div id="crypto-grid" class="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
+
+    <!-- ── Market Breadth ── -->
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-semibold text-white">Market Breadth</h3>
+        <span id="breadth-label" class="text-xs font-bold px-2 py-0.5 rounded bg-gray-700 text-gray-300">N/A</span>
+      </div>
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="bg-gray-800 rounded-lg p-3 flex flex-col items-center">
+          <span class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Pairs &gt; EMA50</span>
+          <span id="breadth-alts-ema50" class="text-lg font-bold text-white">—</span>
+        </div>
+        <div class="bg-gray-800 rounded-lg p-3 flex flex-col items-center">
+          <span class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">BTC Dom.</span>
+          <span id="breadth-btc-dom" class="text-lg font-bold text-white">—</span>
+        </div>
+        <div class="bg-gray-800 rounded-lg p-3 flex flex-col items-center">
+          <span class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Funding BTC</span>
+          <span id="breadth-funding" class="text-lg font-bold text-white">—</span>
+        </div>
+        <div class="bg-gray-800 rounded-lg p-3 flex flex-col items-center">
+          <span class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">OI Expansion</span>
+          <span id="breadth-oi" class="text-lg font-bold text-white">—</span>
+        </div>
+      </div>
+      <div class="mt-3 flex items-center gap-3 text-[10px] text-gray-500">
+        <span>Score: <span id="breadth-score" class="font-bold text-white">—</span></span>
+        <span>Mult: <span id="breadth-mult" class="font-bold text-white">—</span></span>
+        <span class="ml-auto">
+          <span class="text-green-400 font-semibold">≥70% NORMAL</span>
+          <span class="mx-1">·</span>
+          <span class="text-yellow-400 font-semibold">40-70% REDUZIDO (×0.7)</span>
+          <span class="mx-1">·</span>
+          <span class="text-red-400 font-semibold">&lt;40% BLOQUEADO SOL</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- ── Filtros Ativos por Par ── -->
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-semibold text-white">Filtros Ativos</h3>
+        <span class="text-xs text-gray-500">ADX · Score · MTF 6H · SL Range · ATR Stop — por ciclo</span>
+      </div>
+      <!-- Banner de Regime Global -->
+      <div id="regime-banner" class="rounded-lg px-4 py-2.5 mb-3 flex items-center justify-between mode-chop">
+        <span id="regime-banner-text" class="text-sm font-bold">↔ CHOP — Operação Conservadora</span>
+        <span class="text-[10px] text-gray-400">Market Regime Engine</span>
+      </div>
+      <!-- Bear Signals — visível apenas quando há sinais ativos -->
+      <div id="bear-signals-row" class="hidden mb-3 flex flex-wrap gap-1.5"></div>
+      <!-- Regras de operação -->
+      <div class="text-[10px] text-gray-500 mb-3 flex flex-wrap gap-x-4 gap-y-1">
+        <span>Min RR: <span class="text-indigo-400 font-semibold">2.5:1</span></span>
+        <span>Max Alts: <span class="text-yellow-400 font-semibold">2</span></span>
+        <span>Exp. Alts: <span class="text-orange-400 font-semibold">≤ 25%</span></span>
+        <span>SL SOL: <span class="text-purple-400 font-semibold">5–7%</span></span>
+        <span>SL BTC: <span class="text-green-400 font-semibold">2–4%</span></span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="text-gray-500 uppercase tracking-wider text-[10px] border-b border-gray-800">
+              <th class="text-left pb-2 pr-4">Par</th>
+              <th class="text-center pb-2 pr-4">Regime ADX</th>
+              <th class="text-center pb-2 pr-4">Score / Gate</th>
+              <th class="text-center pb-2 pr-4">MTF 6H</th>
+              <th class="text-center pb-2 pr-4">SL Range</th>
+              <th class="text-center pb-2 pr-4">ATR Stop</th>
+              <th class="text-center pb-2 pr-4">Trades Hoje</th>
+              <th class="text-center pb-2">Slots</th>
+            </tr>
+          </thead>
+          <tbody id="filters-table-body">
+            <!-- populated by JS -->
+          </tbody>
+        </table>
+      </div>
+      <!-- Legenda de Score Gate -->
+      <div class="mt-3 flex flex-wrap gap-2 text-[10px]">
+        <span class="score-blocked px-2 py-0.5 rounded font-bold">&lt;33% BLOQUEADO</span>
+        <span class="score-reduced px-2 py-0.5 rounded font-bold">33-75% REDUZIDO</span>
+        <span class="score-normal px-2 py-0.5 rounded font-bold">75-85% NORMAL</span>
+        <span class="score-aggr px-2 py-0.5 rounded font-bold">85%+ AGRESSIVO</span>
+      </div>
+      <!-- News Guard Banner -->
+      <div id="news-guard-banner" class="hidden mt-3 rounded-lg px-4 py-2 flex items-center justify-between bg-orange-900/40 border border-orange-500/40">
+        <div class="flex items-center gap-2">
+          <span class="text-orange-400 text-sm">📰</span>
+          <span id="news-guard-reason" class="text-xs font-bold text-orange-300">NewsGuard ativo</span>
+        </div>
+        <span class="text-[10px] text-orange-500">Entradas bloqueadas</span>
+      </div>
+      <!-- Próximo evento -->
+      <div id="next-news-row" class="hidden mt-2 text-[10px] text-gray-500 flex items-center gap-2">
+        <span class="text-yellow-500">⏱</span>
+        <span>Próximo evento: <span id="next-news-name" class="text-yellow-400 font-semibold">—</span> em <span id="next-news-mins" class="text-yellow-400 font-semibold">—</span> min</span>
+      </div>
+    </div>
+
+    <!-- ── Gráfico de Candles ── -->
+    <div class="card p-5">
+      <div class="mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-white">Gráfico de Monitoramento</h3>
+          <span id="candle-price" class="font-mono text-white text-sm font-bold">—</span>
+        </div>
+        <div class="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-none">
+          <div class="flex gap-1 shrink-0">
+            <button onclick="setCandlePair('BTC-USD')" data-pair="BTC-USD" class="candle-pair-btn active px-3 py-1 rounded text-xs font-semibold">BTC</button>
+            <button onclick="setCandlePair('ETH-USD')" data-pair="ETH-USD" class="candle-pair-btn px-3 py-1 rounded text-xs font-semibold">ETH</button>
+            <button onclick="setCandlePair('SOL-USD')" data-pair="SOL-USD" class="candle-pair-btn px-3 py-1 rounded text-xs font-semibold">SOL</button>
+          </div>
+          <span class="text-gray-700 shrink-0">|</span>
+          <div class="flex gap-1 shrink-0">
+            <button onclick="setCandleTF('ONE_MINUTE',1)"      data-tf="ONE_MINUTE"     class="candle-tf-btn px-2.5 py-1 rounded text-xs font-semibold">1m</button>
+            <button onclick="setCandleTF('FIVE_MINUTE',5)"     data-tf="FIVE_MINUTE"    class="candle-tf-btn px-2.5 py-1 rounded text-xs font-semibold">5m</button>
+            <button onclick="setCandleTF('FIFTEEN_MINUTE',15)" data-tf="FIFTEEN_MINUTE" class="candle-tf-btn px-2.5 py-1 rounded text-xs font-semibold">15m</button>
+            <button onclick="setCandleTF('ONE_HOUR',60)"      data-tf="ONE_HOUR"       class="candle-tf-btn active px-2.5 py-1 rounded text-xs font-semibold">1h</button>
+            <button onclick="setCandleTF('SIX_HOUR',360)"     data-tf="SIX_HOUR"       class="candle-tf-btn px-2.5 py-1 rounded text-xs font-semibold">6h</button>
+            <button onclick="setCandleTF('ONE_DAY',1440)"     data-tf="ONE_DAY"        class="candle-tf-btn px-2.5 py-1 rounded text-xs font-semibold">1d</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px;">
+        <span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;">Candle · Preço</span>
+        <span style="font-size:9px;color:#4b5563;">— EMA9·21·50 | Donchian 20 (1H) | Bollinger (20,2) | Volume</span>
+      </div>
+      <div id="candle-chart" style="overflow:hidden;"></div>
+      <div class="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-2 text-[10px] text-gray-500">
+
+        <!-- 1. Candle / Preço -->
+        <div class="flex flex-col gap-0.5">
+          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">Candle · Preço</p>
+          <span><span style="color:#06b6d4">—</span> EMA9</span>
+          <span><span style="color:#818cf8">—</span> EMA21</span>
+          <span><span style="color:#c084fc">—</span> EMA50</span>
+          <span><span style="color:rgba(249,115,22,0.8)">- -</span> Donchian 20 (1H)</span>
+          <span><span style="color:rgba(99,102,241,0.6)">···</span> Bollinger (20,2)</span>
+          <span><span style="color:rgba(74,222,128,0.5)">▮</span> Vol ↑ / <span style="color:rgba(248,113,113,0.5)">▮</span> Vol ↓</span>
+        </div>
+
+        <!-- 2. MACD -->
+        <div class="flex flex-col gap-0.5">
+          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">MACD (12·26·9)</p>
+          <span><span style="color:#3b82f6">—</span> Linha MACD</span>
+          <span><span style="color:#f87171">—</span> Linha Sinal</span>
+          <span><span style="color:rgba(74,222,128,0.7)">▮</span> Histograma +</span>
+          <span><span style="color:rgba(156,163,175,0.4)">—</span> Zero</span>
+          <span class="text-gray-600 mt-0.5">Cross-up + ADX↑ = BUY</span>
+        </div>
+
+        <!-- 3. RSI -->
+        <div class="flex flex-col gap-0.5">
+          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">RSI (14)</p>
+          <span><span style="color:#facc15">—</span> RSI</span>
+          <span><span style="color:rgba(248,113,113,0.5)">- -</span> 75 → bloqueia MACD</span>
+          <span><span style="color:rgba(74,222,128,0.5)">- -</span> 30 → sobrevenda</span>
+          <span><span style="color:rgba(156,163,175,0.25)">—</span> 50 → neutro</span>
+          <span class="text-gray-600 mt-0.5">EMA Pullback usa RSI indireto</span>
+        </div>
+
+        <!-- 4. OBV -->
+        <div class="flex flex-col gap-0.5">
+          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">OBV</p>
+          <span><span style="color:#38bdf8">—</span> On-Balance Volume</span>
+          <span class="text-gray-600">Crescente = acumulação</span>
+          <span class="text-gray-600">Decrescente = distribuição</span>
+          <span class="text-gray-600 mt-0.5">Indicador informativo</span>
+        </div>
+
+        <!-- 5. ADX -->
+        <div class="flex flex-col gap-0.5">
+          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">ADX (14) — Regime</p>
+          <span><span style="color:#e879f9">—</span> ADX (força)</span>
+          <span><span style="color:rgba(74,222,128,0.6)">- -</span> 20 → TRENDING</span>
+          <span><span style="color:rgba(250,204,21,0.6)">- -</span> 20 → limite CHOP</span>
+          <span class="text-gray-600 mt-0.5">≥20 = Donchian/MACD/EMA</span>
+          <span class="text-gray-600">&lt;20 = BB Reversion</span>
+        </div>
+
+        <!-- 6. BB Reversion -->
+        <div class="flex flex-col gap-0.5">
+          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">BB Reversion — RSI</p>
+          <span><span style="color:#a78bfa">—</span> RSI (14) roxo</span>
+          <span><span style="color:rgba(74,222,128,0.6)">- -</span> 35 → zona de entrada</span>
+          <span><span style="color:rgba(248,113,113,0.4)">- -</span> 60 → zona de saída</span>
+          <span class="text-gray-600 mt-0.5">RSI&lt;35 + BB inferior = BUY</span>
+          <span class="text-gray-600">Saída: retorno à BB média</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Evolução + Distribuição ── -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="card p-5 lg:col-span-2">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-white">Evolução do Portfolio</h3>
+          <div class="flex gap-1 overflow-x-auto scrollbar-none" id="period-selector">
+            <button onclick="setPeriod('1m')"  data-period="1m"  class="period-btn shrink-0 px-2.5 py-1 rounded text-xs font-semibold">1m</button>
+            <button onclick="setPeriod('5m')"  data-period="5m"  class="period-btn shrink-0 px-2.5 py-1 rounded text-xs font-semibold">5m</button>
+            <button onclick="setPeriod('15m')" data-period="15m" class="period-btn shrink-0 px-2.5 py-1 rounded text-xs font-semibold">15m</button>
+            <button onclick="setPeriod('1h')"  data-period="1h"  class="period-btn active shrink-0 px-2.5 py-1 rounded text-xs font-semibold">1h</button>
+            <button onclick="setPeriod('6h')"  data-period="6h"  class="period-btn shrink-0 px-2.5 py-1 rounded text-xs font-semibold">6h</button>
+            <button onclick="setPeriod('1d')"  data-period="1d"  class="period-btn shrink-0 px-2.5 py-1 rounded text-xs font-semibold">1d</button>
+          </div>
+        </div>
+        <canvas id="portfolioChart" height="120"></canvas>
+      </div>
+      <div class="card p-5">
+        <h3 class="font-semibold text-white mb-4">Distribuição</h3>
+        <canvas id="allocationChart" height="180"></canvas>
+        <div id="allocation-legend" class="mt-4 space-y-2 text-xs text-gray-400"></div>
+      </div>
+    </div>
+
+    <!-- ── Histórico de Trades + Feed ── -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold text-white">Histórico de Trades</h3>
+          <span id="trade-badge" class="text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full">0 trades</span>
+        </div>
+        <div id="trades-list" class="space-y-2 max-h-80 overflow-y-auto pr-1">
+          <p class="text-gray-500 text-sm text-center py-8">Nenhum trade ainda...</p>
+        </div>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="font-semibold text-white">Feed de Sinais</h3>
+            <p id="feed-cycle-label" class="text-[10px] text-gray-600 mt-0.5">ciclo #—</p>
+          </div>
+          <span class="flex items-center gap-2 text-xs">
+            <span class="flex items-center gap-1.5 text-green-400">
+              <span class="w-1.5 h-1.5 rounded-full bg-green-400 pulse-dot"></span>
+              ao vivo
+            </span>
+            <span class="text-gray-600">·</span>
+            <span class="text-gray-400">próximo ciclo
+              <span id="cycle-timer" class="font-mono text-indigo-400 font-semibold">--</span>
+              <span id="cycle-executing" style="display:none" class="font-mono text-orange-400 font-semibold"></span>
+            </span>
+          </span>
+        </div>
+        <div id="feed-list" class="space-y-1.5 max-h-80 overflow-y-auto pr-1">
+          <p class="text-gray-500 text-sm text-center py-8">Aguardando sinais...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── KPIs em Tempo Real ── -->
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-white">KPIs em Tempo Real</h3>
+        <div class="flex items-center gap-3">
+          <span class="text-[10px] text-gray-600">Circuit Breaker: <span id="kpi-circuit-breaker" class="text-cyan-400 font-bold">—/10</span></span>
+          <span class="text-[10px] text-gray-600">Slots: <span id="kpi-open-slots" class="text-cyan-400 font-bold">—/4</span></span>
+          <span class="text-xs text-gray-500">atualizado a cada ciclo</span>
+        </div>
+      </div>
+
+      <!-- Overview global — 4 cards compactos -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        <div class="bg-gray-800/50 border border-gray-700 rounded-xl p-3">
+          <p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Win Rate Global</p>
+          <p id="kpi-win-rate" class="text-2xl font-bold text-gray-300">—</p>
+          <div class="mt-1.5 h-1 bg-gray-700 rounded-full overflow-hidden">
+            <div id="kpi-win-rate-bar" class="h-1 rounded-full bg-green-500 transition-all" style="width:0%"></div>
+          </div>
+          <p class="text-[10px] text-gray-600 mt-1">Meta: <span class="text-yellow-500">55%+</span></p>
+        </div>
+        <div class="bg-gray-800/50 border border-gray-700 rounded-xl p-3">
+          <p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Profit Factor</p>
+          <p id="kpi-profit-factor" class="text-2xl font-bold text-gray-300">—</p>
+          <p id="kpi-avg-win" class="text-[10px] text-green-400 mt-1">Ganho méd: —</p>
+          <p id="kpi-avg-loss" class="text-[10px] text-red-400">Perda méd: —</p>
+        </div>
+        <div class="bg-gray-800/50 border border-gray-700 rounded-xl p-3">
+          <p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Max Drawdown</p>
+          <p id="kpi-max-dd" class="text-2xl font-bold text-red-400">—</p>
+          <p class="text-[10px] text-gray-600 mt-1">Regime: <span id="kpi-market-mode" class="text-yellow-400 font-bold">—</span> · TP: <span id="kpi-market-mode-tp" class="text-indigo-400 font-bold">—</span></p>
+        </div>
+        <div class="bg-gray-800/50 border border-gray-700 rounded-xl p-3">
+          <p class="text-[10px] text-gray-500 uppercase tracking-wide mb-1">Trade Size Dinâmico</p>
+          <p id="kpi-trade-pct" class="text-2xl font-bold text-yellow-400">—</p>
+          <p id="kpi-open-slots-sub" class="text-[10px] text-gray-600 mt-1">slots abertos</p>
+        </div>
+      </div>
+
+      <!-- Tabela por estratégia -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="text-gray-500 uppercase tracking-wider text-[9px] border-b border-gray-800">
+              <th class="text-left pb-2 pr-3">Estratégia</th>
+              <th class="text-center pb-2 px-3">
+                Win Rate
+                <div class="text-[8px] text-gray-600 font-normal normal-case">total · últ.10</div>
+              </th>
+              <th class="text-center pb-2 px-3">
+                Profit Factor
+                <div class="text-[8px] text-gray-600 font-normal normal-case">lucro / perda</div>
+              </th>
+              <th class="text-center pb-2 px-3">
+                Edge Decay
+                <div class="text-[8px] text-gray-600 font-normal normal-case">recente vs total</div>
+              </th>
+              <th class="text-center pb-2 px-3">
+                DD Contrib.
+                <div class="text-[8px] text-gray-600 font-normal normal-case">% do drawdown</div>
+              </th>
+              <th class="text-center pb-2 px-3">
+                MFE Capture
+                <div class="text-[8px] text-gray-600 font-normal normal-case">realizado / potencial</div>
+              </th>
+              <th class="text-center pb-2 pl-3">
+                P&L
+                <div class="text-[8px] text-gray-600 font-normal normal-case">realizado</div>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="kpi-strategy-table">
+            <!-- populated by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Legenda -->
+      <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[9px] text-gray-600 border-t border-gray-800 pt-2">
+        <span><span class="text-green-400">▲</span> Edge Decay positivo = melhora recente</span>
+        <span><span class="text-red-400">▼</span> Edge Decay negativo = deterioração nos últimos 10 trades</span>
+        <span>MFE Capture = % do alvo TP que foi efetivamente realizado</span>
+        <span>DD Contrib = % do drawdown máximo originado desta estratégia</span>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ── Modal de Trade ── -->
+  <div id="trade-modal" class="fixed inset-0 z-[9999] hidden items-center justify-center" style="display:none">
+    <div class="absolute inset-0 bg-black/75 backdrop-blur-sm" onclick="closeTradeModal()"></div>
+    <div class="relative card p-6 w-full max-w-sm mx-4 z-10 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="modal-title" class="text-lg font-bold text-white">Comprar BTC</h3>
+        <button onclick="closeTradeModal()" class="text-gray-500 hover:text-gray-300 text-xl leading-none">&times;</button>
+      </div>
+      <p id="modal-subtitle" class="text-xs text-gray-500 mb-4 -mt-2">—</p>
+      <div class="mb-5">
+        <label class="text-xs text-gray-400 block mb-1.5 font-medium">Valor (R$)</label>
+        <input id="modal-input" type="number" step="0.01" min="0"
+          class="w-full bg-gray-800/80 border border-gray-600 rounded-lg px-3 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-indigo-500"
+          placeholder="0.00"
+          onkeydown="if(event.key==='Enter') confirmTrade()">
+      </div>
+      <div class="flex gap-3">
+        <button onclick="closeTradeModal()"
+          class="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-gray-700/80 text-gray-300 border border-gray-600 hover:bg-gray-600/80">
+          Cancelar
+        </button>
+        <button id="modal-confirm" onclick="confirmTrade()"
+          class="flex-1 py-2.5 rounded-lg text-sm font-bold bg-green-500/25 text-green-400 border border-green-500/40 hover:bg-green-500/35">
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // ─── Configurações de criptos ────────────────────────────────────────────
+  const CRYPTOS = [
+    { sym: 'BTC',  name: 'Bitcoin',   pair: 'BTC-USD', icon: '₿',  color: 'text-orange-400', bg: 'bg-orange-500/20' },
+    { sym: 'ETH',  name: 'Ethereum',  pair: 'ETH-USD', icon: 'Ξ',  color: 'text-blue-400',   bg: 'bg-blue-500/20'   },
+    { sym: 'SOL',  name: 'Solana',    pair: 'SOL-USD', icon: '◎',  color: 'text-purple-400', bg: 'bg-purple-500/20' },
+    ];
+
+  const STRATEGIES = [
+    {
+      name: 'Donchian Breakout', id: 'Don', icon: '🚀',
+      filters: ['RVOL≥1.3', 'ADX>20', 'Close✓'],
+      desc: 'Breakout do canal Donchian 20 — 1H + confirmação 6H. RVOL≥1.3× (participação real), ADX>20, close confirmado.'
+    },
+    {
+      name: 'MACD Momentum', id: 'MACD', icon: '⚡',
+      filters: ['MACD>0', 'RSI<75', 'ADX↑'],
+      desc: 'Cruzamento MACD acima de zero. Exige MACD>0, RSI<75 e ADX rising (tendência em aceleração, não exaustão).'
+    },
+    {
+      name: 'EMA Pullback', id: 'EMA', icon: '📈',
+      filters: ['EMA9>21>50', 'Touch✓'],
+      desc: 'Pullback para EMA21 em uptrend. Condições: uptrend alinhado + toque EMA21 + rejeição (close≥EMA21) + vela verde.'
+    },
+    {
+      name: 'BB Reversion', id: 'BB', icon: '↩️',
+      filters: ['BB<Lower', 'RSI<35', 'CHOP'],
+      desc: 'Reversão à média via Bollinger Band(20,2). Ativo exclusivamente em CHOP. Compra na banda inferior (RSI<35), realiza na banda média (EMA20). Limit order.'
+    },
+  ];
+
+  // ─── Helpers de regime (pair-level ADX regime) ──────────────────────────
+  function regimeCls(r) {
+    if (!r || r === '—') return 'regime-neutral';
+    const ru = r.toUpperCase();
+    if (ru === 'TRENDING') return 'regime-trending';
+    if (ru === 'RANGING')  return 'regime-ranging';
+    return 'regime-neutral';
+  }
+  function regimeLabel(r) {
+    if (!r || r === '—') return '—';
+    return r.toUpperCase();
+  }
+
+  // ─── Market Mode global (bull/chop/bear) helpers ────────────────────────
+  function marketModeCls(m) {
+    if (!m) return 'mode-chop';
+    const mu = m.toLowerCase();
+    if (mu === 'bull') return 'mode-bull';
+    if (mu === 'bear') return 'mode-bear';
+    return 'mode-chop';
+  }
+  function marketModeIcon(m) {
+    if (!m) return '↔';
+    const mu = m.toLowerCase();
+    if (mu === 'bull') return '🐂';
+    if (mu === 'bear') return '🐻';
+    return '↔';
+  }
+  function marketModeDesc(m) {
+    if (!m) return 'CHOP — Operação Conservadora';
+    const mu = m.toLowerCase();
+    if (mu === 'bull') return 'BULL — Operação Agressiva';
+    if (mu === 'bear') return 'BEAR — Novas compras BLOQUEADAS';
+    return 'CHOP — Operação Conservadora';
+  }
+
+  // ─── Inferir regime (pair-level) a partir dos sinais disponíveis ─────────
+  // Prefere campo sig.regime do backend; fallback por heurística de estratégias
+  function inferRegime(sig) {
+    if (!sig || !sig.strategies) return 'NEUTRAL';
+    // Prefer backend explicit regime field
+    if (sig.regime) return sig.regime.toUpperCase();
+
+    const don  = sig.strategies['Donchian Breakout'] || 'HOLD';
+    const ema  = sig.strategies['EMA Pullback']      || 'HOLD';
+    const macd = sig.strategies['MACD Momentum']     || 'HOLD';
+
+    const trendBuys   = [don, ema, macd].filter(v => v === 'BUY').length;
+    const trendActive = [don, ema, macd].some(v => v !== 'HOLD');
+
+    if (trendBuys >= 2) return 'TRENDING';
+    if (trendActive) return 'TRENDING';
+    return 'NEUTRAL';
+  }
+
+  // ─── Gera cards de cripto dinamicamente ─────────────────────────────────
+  document.getElementById('crypto-grid').innerHTML = CRYPTOS.map(c => `
+    <div id="card-${c.sym}" class="card p-5">
+      <div class="flex items-start justify-between mb-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full ${c.bg} flex items-center justify-center text-xl">${c.icon}</div>
+          <div>
+            <h2 class="font-bold text-white text-lg">${c.name}</h2>
+            <p class="text-xs text-gray-500">${c.pair}</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <p id="price-${c.sym}" class="text-2xl font-bold text-white font-mono">—</p>
+          <p id="chg-${c.sym}" class="text-sm text-gray-400">—</p>
+        </div>
+      </div>
+      <!-- Regime badge -->
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs text-gray-600 uppercase tracking-wider">Regime de Mercado</span>
+        <span id="regime-${c.sym}" class="regime-neutral text-[10px] font-bold px-2.5 py-0.5 rounded-full">—</span>
+      </div>
+      <div class="grid grid-cols-4 gap-1 mb-2">
+        ${STRATEGIES.map(s => `
+        <div id="slot-${c.sym}-${s.id}" class="signal-hold rounded-lg px-1 py-1.5 text-center text-[9px]">
+          <p class="opacity-60 mb-0.5">${s.icon} ${s.id}</p>
+          <p class="slot-signal text-[10px] font-bold">HOLD</p>
+          <p class="slot-pos text-gray-600 mt-0.5">sem posição</p>
+        </div>`).join('')}
+      </div>
+      <div id="holdings-${c.sym}" class="mt-1 text-xs text-gray-500 hidden">
+        Posição: <span id="qty-${c.sym}" class="${c.color} font-mono font-bold">0</span> ${c.sym}
+      </div>
+      <div id="sltp-${c.sym}" class="mt-2 hidden">
+        <div class="grid grid-cols-4 gap-1.5 text-xs">
+          <div class="bg-gray-800/60 rounded px-2 py-1.5 text-center">
+            <p class="text-gray-500 mb-0.5">Entrada</p>
+            <p id="entry-${c.sym}" class="text-white font-mono font-bold">—</p>
+          </div>
+          <div class="bg-red-500/10 border border-red-500/20 rounded px-2 py-1.5 text-center">
+            <p class="text-red-400 mb-0.5">SL</p>
+            <p id="sl-${c.sym}" class="text-red-300 font-mono font-bold">—</p>
+          </div>
+          <div class="bg-orange-500/10 border border-orange-500/20 rounded px-2 py-1.5 text-center">
+            <p class="text-orange-400 mb-0.5">ATR SL</p>
+            <p id="atr-sl-${c.sym}" class="text-orange-300 font-mono font-bold">—</p>
+          </div>
+          <div class="bg-green-500/10 border border-green-500/20 rounded px-2 py-1.5 text-center">
+            <p class="text-green-400 mb-0.5">TP</p>
+            <p id="tp-${c.sym}" class="text-green-300 font-mono font-bold">—</p>
+          </div>
+        </div>
+        <div class="mt-1 flex items-center justify-between text-xs px-1">
+          <span class="text-gray-500">Variação desde entrada</span>
+          <span id="chg-entry-${c.sym}" class="font-mono font-bold">—</span>
+        </div>
+      </div>
+    </div>`).join('');
+
+  // ─── Formatação ─────────────────────────────────────────────────────────
+  const fmt    = n => (n||0).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  const fmtBRL = n => (n||0).toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  const signalClass = s => s === 'BUY' ? 'signal-buy' : s === 'SELL' ? 'signal-sell' : 'signal-hold';
+
+  // ─── Estado global ───────────────────────────────────────────────────────
+  let usdBrl = 5.70;
+  let fullHistory = [];
+  let currentPeriod = '1h';
+  let _modalSide = '', _modalPair = '';
+  let _holdings = {};
+  let _balanceUSD = 0;
+
+  // ─── Chart.js — Portfolio ─────────────────────────────────────────────
+  const portfolioChart = new Chart(
+    document.getElementById('portfolioChart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        data: [], borderColor: '#6366f1',
+        backgroundColor: 'rgba(99,102,241,0.08)',
+        fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#6b7280', font: { size: 10 } }, grid: { color: '#21262d' } },
+        y: { ticks: { color: '#6b7280', font: { size: 10 },
+               callback: v => 'R$' + (v * usdBrl).toLocaleString('pt-BR', { maximumFractionDigits: 0 })
+             }, grid: { color: '#21262d' } }
+      }
+    }
+  });
+
+  // ─── Chart.js — Allocation ───────────────────────────────────────────
+  const allocationChart = new Chart(
+    document.getElementById('allocationChart').getContext('2d'), {
+    type: 'doughnut',
+    data: { labels: ['USD'], datasets: [{ data: [100], backgroundColor: ['#6366f1'], borderWidth: 0, hoverOffset: 4 }] },
+    options: { responsive: true, cutout: '70%', plugins: { legend: { display: false } } }
+  });
+
+  // ─── updateState — principal função de atualização ───────────────────
+  function updateState(s) {
+    // Countdown sync
+    // Usa next_cycle_ts (timestamp absoluto da próxima hora cheia SP)
+    // para countdown preciso e alinhado ao relógio
+    if (s.next_cycle_ts)  _nextCycleTs  = s.next_cycle_ts;
+    if (s.cycle_start_ts) _cycleStartTs = s.cycle_start_ts;
+    if (s.cycle_interval) _cycleInterval = s.cycle_interval;
+    _synced = true;
+
+    // USD/BRL
+    if (s.usd_brl) {
+      usdBrl = s.usd_brl;
+      document.getElementById('usd-brl-rate').textContent = 'R$ ' + fmtBRL(usdBrl);
+    }
+
+    // Header
+    if (s.last_update) document.getElementById('last-update').textContent = s.last_update;
+
+    // Ciclo
+    if (s.cycle) {
+      const n = s.cycle;
+      document.getElementById('header-cycle-count').textContent = '#' + n;
+      document.getElementById('feed-cycle-label').textContent = 'ciclo #' + n;
+    }
+
+    // Fear & Greed
+    if (s.fear_greed) {
+      const fgV = s.fear_greed.value || 50;
+      const fgEl = document.getElementById('fg-value');
+      fgEl.textContent = fgV;
+      fgEl.style.color = fgV <= 25 ? '#4ade80' : fgV <= 40 ? '#86efac' : fgV <= 60 ? '#9ca3af' : fgV <= 75 ? '#fb923c' : '#f87171';
+      document.getElementById('fg-label').textContent = s.fear_greed.label || 'Neutral';
+    }
+
+    // Portfolio
+    const p = s.portfolio || {};
+    const totalBRL = p.total_brl || 0;
+    const totalUSD = p.total_usd || 0;
+    const pnlBRL   = p.pnl_brl  || 0;
+    const pnlPct   = p.pnl_pct  || 0;
+    const usdAvail = p.usd      || 0;
+    const initBRL  = p.initial_balance_brl || 4000;
+
+    _holdings   = p.holdings  || {};
+    _balanceUSD = usdAvail;
+
+    document.getElementById('portfolio-total').textContent = 'R$ ' + fmtBRL(totalBRL);
+    document.getElementById('portfolio-total-usd').textContent = 'US$ ' + fmt(totalUSD) + ' · Inic: R$ ' + fmtBRL(initBRL);
+    document.getElementById('balance-brl').textContent = 'R$ ' + fmtBRL(usdAvail * usdBrl);
+    document.getElementById('balance-usd').textContent = 'US$ ' + fmt(usdAvail);
+
+    const pnlEl = document.getElementById('pnl-value');
+    pnlEl.textContent = (pnlBRL >= 0 ? '+' : '-') + 'R$ ' + fmtBRL(Math.abs(pnlBRL));
+    pnlEl.className = 'text-lg font-bold leading-tight ' + (pnlBRL >= 0 ? 'text-green-400' : 'text-red-400');
+    document.getElementById('pnl-pct').textContent = (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%';
+    document.getElementById('pnl-pct').className = 'text-[10px] mt-0.5 ' + (pnlPct >= 0 ? 'text-green-500' : 'text-red-500');
+
+    const subtitleEl = document.getElementById('strategy-panel-subtitle');
+    if (subtitleEl) {
+      subtitleEl.textContent = 'P&L em trades';
+    }
+
+    // Usa kpis.total_trades para o total real — state['trades'] é limitado a 50 para o WebSocket
+    const totalTrades = (s.kpis || {}).total_trades ?? (s.trades || []).length;
+    document.getElementById('trade-count').textContent = totalTrades;
+    document.getElementById('trade-badge').textContent = totalTrades + ' trades';
+
+    const feesUsd = p.total_fees_usd || 0;
+    document.getElementById('total-fees').textContent = 'R$ ' + fmtBRL(feesUsd * usdBrl);
+    const feeRate = s.fee_taker != null ? s.fee_taker.toFixed(2) + '%' : '—';
+    const feeVol  = s.fee_vol_30d != null ? ' · vol30d US$' + fmt(s.fee_vol_30d) : '';
+    document.getElementById('total-fees-usd').textContent = 'US$ ' + fmt(feesUsd) + feeVol;
+    const feeRateEl = document.getElementById('current-fee-rate');
+    if (feeRateEl) feeRateEl.textContent = feeRate;
+
+    // ── Preços, sinais e regime dos cards de cripto ───────────────────────
+    CRYPTOS.forEach(c => {
+      const price = (s.prices || {})[c.pair];
+      const sig   = (s.signals || {})[c.pair];
+
+      if (price && price.price) {
+        document.getElementById('price-' + c.sym).textContent = 'R$ ' + fmtBRL(price.price * usdBrl);
+        const chg = price.price_pct_chg || 0;
+        const chgEl = document.getElementById('chg-' + c.sym);
+        chgEl.textContent = 'US$ ' + fmt(price.price) + ' · ' + (chg >= 0 ? '▲ +' : '▼ ') + chg.toFixed(2) + '%';
+        chgEl.className = 'text-sm ' + (chg >= 0 ? 'text-green-400' : 'text-red-400');
+      }
+
+      // Regime badge per pair — usa sig.regime do backend se disponível
+      const regimeEl = document.getElementById('regime-' + c.sym);
+      if (regimeEl) {
+        const regime = sig ? inferRegime(sig) : 'NEUTRAL';
+        regimeEl.textContent  = regime;
+        regimeEl.className    = regimeCls(regime) + ' text-[10px] font-bold px-2.5 py-0.5 rounded-full';
+      }
+
+      if (sig) {
+        // Slots por estratégia
+        const slots = s.slots || {};
+        STRATEGIES.forEach(st => {
+          const el = document.getElementById(`slot-${c.sym}-${st.id}`);
+          if (!el) return;
+          const sigVal = (sig.strategies || {})[st.name] || 'HOLD';
+          const slot   = slots[`${st.name}:${c.pair}`] || {};
+          const ps     = el.querySelectorAll('p');
+          el.className = signalClass(sigVal) + ' rounded-lg px-1 py-1.5 text-center text-[9px]';
+          if (ps[1]) ps[1].textContent = sigVal;
+          if (ps[2]) {
+            if ((slot.qty || 0) > 0 && price && slot.entry) {
+              const chg2 = (price.price - slot.entry) / slot.entry * 100;
+              ps[2].textContent = `● ${chg2 >= 0 ? '+' : ''}${chg2.toFixed(1)}%`;
+              ps[2].style.color = chg2 >= 0 ? '#4ade80' : '#f87171';
+            } else {
+              ps[2].textContent = 'sem posição';
+              ps[2].style.color = '#4b5563';
+            }
+          }
+        });
+
+        // SL / TP / ATR SL
+        const sltpEl = document.getElementById('sltp-' + c.sym);
+        if (sltpEl) {
+          if (sig.entry_price) {
+            sltpEl.classList.remove('hidden');
+            document.getElementById('entry-' + c.sym).textContent = 'R$ ' + fmtBRL(sig.entry_price * usdBrl);
+            document.getElementById('sl-' + c.sym).textContent    = 'R$ ' + fmtBRL((sig.sl_level || 0) * usdBrl);
+            document.getElementById('tp-' + c.sym).textContent    = 'R$ ' + fmtBRL((sig.tp_level || 0) * usdBrl);
+            // ATR-based stop loss: prefer sig.atr_sl_level, fallback to "—"
+            const atrSlEl = document.getElementById('atr-sl-' + c.sym);
+            if (atrSlEl) {
+              if (sig.atr_sl_level) {
+                atrSlEl.textContent = 'R$ ' + fmtBRL(sig.atr_sl_level * usdBrl);
+              } else {
+                atrSlEl.textContent = '—';
+              }
+            }
+            const chgEl2 = document.getElementById('chg-entry-' + c.sym);
+            if (chgEl2) {
+              const chgPct = sig.change_pct || 0;
+              chgEl2.textContent = (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%';
+              chgEl2.style.color = chgPct >= 0 ? '#4ade80' : '#f87171';
+            }
+          } else {
+            sltpEl.classList.add('hidden');
+          }
+        }
+      }
+
+      // Holdings
+      const qty = (_holdings[c.sym] || 0);
+      const holdEl = document.getElementById('holdings-' + c.sym);
+      const qtyEl  = document.getElementById('qty-' + c.sym);
+      if (holdEl) holdEl.classList.toggle('hidden', qty <= 0);
+      if (qtyEl && qty > 0) qtyEl.textContent = qty.toFixed(6);
+    });
+
+    // ── Painel de Estratégias ─────────────────────────────────────────────
+    const stratPnl = s.strategy_pnl || {};
+    const allSlots = s.slots || {};
+    const tpPct    = (s.tp_objective || {}).current || 5;
+    const panel    = document.getElementById('strategy-panel');
+    if (panel) {
+      panel.innerHTML = STRATEGIES.map(st => {
+        const sp      = stratPnl[st.name] || {};
+        const realUsd = sp.realized || 0;
+        const realBrl = realUsd * usdBrl;
+        const buys    = sp.buys  || 0;
+        const sells   = sp.sells || 0;
+        let unrlUsd = 0, tpUsd = 0;
+        CRYPTOS.forEach(c => {
+          const sl = allSlots[`${st.name}:${c.pair}`] || {};
+          unrlUsd += (sl.unrealized || 0);
+          if ((sl.qty || 0) > 0 && (sl.entry || 0) > 0) {
+            tpUsd += sl.entry * sl.qty * (tpPct / 100);
+          }
+        });
+        const unrlBrl   = unrlUsd * usdBrl;
+        const tpBrl     = tpUsd * usdBrl;
+        const tpFalta   = Math.max(0, tpBrl - realBrl);
+        const totalBrl2 = realBrl + unrlBrl;
+        const pnlColor  = totalBrl2 >= 0 ? '#4ade80' : '#f87171';
+        // Badges de todas as criptos: cinza=sem posição, verde=positivo, vermelho=negativo
+        const sPrices = s.prices || {};
+        const sSignals = s.signals || {};
+        // Separar pares COM posição dos SEM posição
+        const withPos = [], withoutPos = [];
+        CRYPTOS.forEach(c => {
+          const sl       = allSlots[`${st.name}:${c.pair}`] || {};
+          const hasPos   = (sl.qty || 0) > 0;
+          const curPrice = (sPrices[c.pair] || {}).price;
+          const cSig     = sSignals[c.pair];
+          const cRegime  = cSig ? inferRegime(cSig) : 'NEUTRAL';
+          const regBg    = cRegime==='TRENDING' ? 'rgba(34,197,94,0.08)' : cRegime==='RANGING' ? 'rgba(234,179,8,0.08)' : 'rgba(107,114,128,0.08)';
+          const regBord  = cRegime==='TRENDING' ? 'rgba(34,197,94,0.25)' : cRegime==='RANGING' ? 'rgba(234,179,8,0.25)' : 'rgba(107,114,128,0.2)';
+          const regCol   = cRegime==='TRENDING' ? '#4ade80' : cRegime==='RANGING' ? '#facc15' : '#6b7280';
+
+          if (hasPos && curPrice && sl.entry) {
+            const chg      = (curPrice - sl.entry) / sl.entry * 100;
+            const positive = chg >= 0;
+            const bg       = positive ? 'rgba(74,222,128,0.18)' : 'rgba(248,113,113,0.18)';
+            const border   = positive ? 'rgba(74,222,128,0.6)'  : 'rgba(248,113,113,0.6)';
+            const color    = positive ? '#4ade80' : '#f87171';
+            const pyr      = sl.pyramids > 0 ? ` ×${sl.pyramids+1}` : '';
+            // Badge destacado: borda grossa, ícone ▲, nome + % + pyramids
+            withPos.push(`<span style="background:${bg};border:2px solid ${border};color:${color};box-shadow:0 0 6px ${border}" class="text-[9px] font-bold px-2 py-0.5 rounded-md" title="Comprado — ${cRegime}">▲ ${c.sym}${pyr} ${chg>=0?'+':''}${chg.toFixed(1)}%</span>`);
+          } else {
+            // Badge discreto sem posição
+            withoutPos.push(`<span style="background:${regBg};border:1px solid ${regBord};color:${regCol}" class="text-[9px] px-1.5 py-0.5 rounded opacity-50" title="${cRegime}">${c.sym}</span>`);
+          }
+        });
+        // Posições abertas primeiro, depois sem posição
+        const pairBadges = [...withPos, ...withoutPos];
+
+        // Filter badge per strategy
+        const filterBadge = st.filters.map(f =>
+          `<span class="text-[8px] px-1 py-0.5 rounded" style="background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);color:#818cf8">${f}</span>`
+        ).join('');
+
+        return `<div class="bg-gray-800/50 border border-gray-700 rounded-xl p-3 strat-tooltip">
+          <div class="strat-tooltip-box">
+            <p class="text-[10px] font-semibold text-white mb-1">${st.name}</p>
+            <p class="text-[10px] text-gray-400 leading-relaxed">${st.desc}</p>
+          </div>
+          <div class="flex items-center gap-1.5 mb-1">
+            <span>${st.icon}</span>
+            <span class="text-xs font-semibold text-white truncate">${st.name}</span>
+          </div>
+          <div class="flex flex-wrap gap-1 mb-1.5">${filterBadge}</div>
+          <div class="flex flex-wrap gap-1 mb-2">${pairBadges.join('')}</div>
+          <p class="text-sm font-bold font-mono" style="color:${pnlColor}">${totalBrl2 >= 0 ? '+' : '-'}R$ ${fmtBRL(Math.abs(totalBrl2))}</p>
+          <div class="flex justify-between text-[10px] mt-1">
+            <span style="color:#4ade80">Realizado: ${realBrl >= 0 ? '+' : ''}R$ ${fmtBRL(realBrl)}</span>
+            <span class="text-gray-600">${buys}↑ ${sells}↓</span>
+          </div>
+          ${unrlUsd !== 0 ? `<p class="text-[10px] mt-0.5" style="color:#f97316">Não realizado: ${unrlBrl>=0?'+':'-'}R$ ${fmtBRL(Math.abs(unrlBrl))}</p>` : ''}
+          ${tpBrl > 0 ? `<p class="text-[10px] mt-0.5" style="color:#818cf8">TP: falta R$ ${fmtBRL(tpFalta)} (${tpBrl > 0 ? ((tpFalta/tpBrl)*100).toFixed(0) : 0}%)</p>` : ''}
+        </div>`;
+      }).join('');
+    }
+
+    // ── News Guard banner ─────────────────────────────────────────────────
+    const newsBanner  = document.getElementById('news-guard-banner');
+    const newsReason  = document.getElementById('news-guard-reason');
+    const nextNewsRow = document.getElementById('next-news-row');
+    const nextNewsName = document.getElementById('next-news-name');
+    const nextNewsMins = document.getElementById('next-news-mins');
+    if (newsBanner) {
+      if (s.news_blackout) {
+        newsBanner.classList.remove('hidden');
+        if (newsReason) newsReason.textContent = s.news_reason || 'NewsGuard ativo';
+      } else {
+        newsBanner.classList.add('hidden');
+      }
+    }
+    if (nextNewsRow && s.next_news_event) {
+      nextNewsRow.classList.remove('hidden');
+      if (nextNewsName) nextNewsName.textContent = s.next_news_event.name || '—';
+      if (nextNewsMins) nextNewsMins.textContent  = s.next_news_event.mins_to ?? '—';
+    } else if (nextNewsRow) {
+      nextNewsRow.classList.add('hidden');
+    }
+
+    // ── Market Breadth panel ──────────────────────────────────────────────
+    const mb = s.market_breadth || {};
+    if (mb) {
+      const mbLabelEl = document.getElementById('breadth-label');
+      const mbLabel   = mb.label || 'N/A';
+      const mbScore   = mb.score;
+      const mbMult    = mb.size_multiplier ?? 1.0;
+      if (mbLabelEl) {
+        const lCls = mbLabel === 'STRONG'   ? 'bg-green-900 text-green-300'
+                   : mbLabel === 'MODERATE' ? 'bg-blue-900 text-blue-300'
+                   : mbLabel === 'WEAK'     ? 'bg-yellow-900 text-yellow-300'
+                   : mbLabel === 'DANGER'   ? 'bg-red-900 text-red-300'
+                   : 'bg-gray-700 text-gray-400';
+        mbLabelEl.className = `text-xs font-bold px-2 py-0.5 rounded ${lCls}`;
+        mbLabelEl.textContent = mbLabel;
+      }
+      // alts_above_ema50_pct agora chega como % real (0-100) do backend
+      const altsPct = mb.alts_above_ema50_pct;
+      const altsEl  = document.getElementById('breadth-alts-ema50');
+      if (altsEl) {
+        altsEl.textContent = altsPct != null ? Math.round(altsPct) + '%' : '—';
+        altsEl.style.color = altsPct == null ? '#9ca3af' : altsPct >= 60 ? '#4ade80' : altsPct >= 40 ? '#fb923c' : '#f87171';
+      }
+      // btc_dominance agora chega como % real (0-100) do backend, ex: 60.5
+      const domEl = document.getElementById('breadth-btc-dom');
+      if (domEl) {
+        const dom = mb.btc_dominance;
+        domEl.textContent = dom != null ? dom.toFixed(1) + '%' : '—';
+        domEl.style.color = dom == null ? '#9ca3af' : dom >= 55 ? '#f87171' : dom >= 45 ? '#fb923c' : '#4ade80';
+      }
+      const fundEl = document.getElementById('breadth-funding');
+      if (fundEl) {
+        const fr = mb.funding_rate_btc;
+        fundEl.textContent = fr != null ? (fr * 100).toFixed(4) + '%' : '—';
+        fundEl.style.color = fr == null ? '#9ca3af' : fr > 0.05 ? '#f87171' : fr > 0.02 ? '#fb923c' : '#4ade80';
+      }
+      const oiEl = document.getElementById('breadth-oi');
+      if (oiEl) {
+        const oi = mb.oi_expansion_btc;
+        oiEl.textContent = oi != null ? (oi >= 0 ? '+' : '') + oi.toFixed(2) + '%' : '—';
+        oiEl.style.color = oi == null ? '#9ca3af' : oi >= 5 ? '#4ade80' : oi >= 0 ? '#60a5fa' : '#f87171';
+      }
+      const scoreEl = document.getElementById('breadth-score');
+      if (scoreEl) scoreEl.textContent = mbScore != null ? Math.round(mbScore * 100) + '%' : '—';
+      const multEl = document.getElementById('breadth-mult');
+      if (multEl) {
+        multEl.textContent = '×' + mbMult.toFixed(1);
+        multEl.style.color = mbMult >= 1.0 ? '#4ade80' : mbMult >= 0.7 ? '#fb923c' : '#f87171';
+      }
+    }
+
+    // ── Filtros Ativos table ──────────────────────────────────────────────
+    const filtersBody = document.getElementById('filters-table-body');
+    if (filtersBody) {
+      const maxSlots    = s.max_open_slots  || 4;
+      const maxTrades   = s.max_daily_trades || 15;
+      const openSlots   = s.open_slots_count != null
+        ? s.open_slots_count
+        : Object.values(allSlots).filter(sl => (sl.qty || 0) > 0).length;
+      const tradesToday = s.trades_today != null ? s.trades_today : 0;
+      const scores      = s.scores || {};
+
+      // SL range fixo por ativo (espelha PAIR_SL_RANGE do backend)
+      const PAIR_SL = {
+        'BTC-USD':  '2–4%', 'ETH-USD':  '3–5%',
+        'SOL-USD':  '5–7%',
+      };
+
+      filtersBody.innerHTML = CRYPTOS.map(c => {
+        const sig    = (s.signals || {})[c.pair];
+        const regime = sig && sig.regime ? sig.regime.toUpperCase() : (sig ? inferRegime(sig) : 'NEUTRAL');
+        const rCls   = regimeCls(regime);
+
+        // ── Score de confiança + Gate ────────────────────────────────
+        const score    = scores[c.pair] != null ? scores[c.pair] : null;
+        let scoreCell  = '<span class="text-gray-500 text-[10px]">—</span>';
+        if (score != null) {
+          const pct = Math.round(score * 100);
+          const barW   = Math.round(pct * 40 / 100);
+          let gateCls, gateLabel, barCol;
+          if (pct < 33)       { gateCls = 'score-blocked'; gateLabel = 'BLOQUEADO'; barCol = '#f87171'; }
+          else if (pct < 75)  { gateCls = 'score-reduced'; gateLabel = 'REDUZIDO';  barCol = '#fb923c'; }
+          else if (pct < 85)  { gateCls = 'score-normal';  gateLabel = 'NORMAL';    barCol = '#60a5fa'; }
+          else                { gateCls = 'score-aggr';    gateLabel = 'AGRESSIVO'; barCol = '#4ade80'; }
+          const bar = `<div style="width:40px;height:3px;background:#21262d;border-radius:2px;margin:2px auto 0;"><div style="width:${barW}px;height:3px;background:${barCol};border-radius:2px;"></div></div>`;
+          scoreCell = `<span class="${gateCls} text-[9px] font-bold px-1.5 py-0.5 rounded">${pct}% ${gateLabel}</span>${bar}`;
+        }
+
+        // ── MTF 6H ───────────────────────────────────────────────────
+        let mtfTxt = '—', mtfCls = 'text-gray-500';
+        if (sig) {
+          if (sig.mtf_ok === true)       { mtfTxt = '✓ OK';   mtfCls = 'text-green-400'; }
+          else if (sig.mtf_ok === false) { mtfTxt = '✗ Bear'; mtfCls = 'text-red-400';   }
+          else {
+            const t = sig.trend || 'HOLD';
+            if (t === 'BUY')  { mtfTxt = '↑ est.'; mtfCls = 'text-yellow-400'; }
+            else              { mtfTxt = '— est.'; mtfCls = 'text-gray-500'; }
+          }
+        }
+
+        // ── SL Range (fixo por ativo) ────────────────────────────────
+        const slRange    = PAIR_SL[c.pair] || '—';
+        const slRangeCls = c.pair === 'BTC-USD' ? 'text-green-400'
+                         : c.pair === 'ETH-USD' ? 'text-cyan-400'
+                         : 'text-orange-400';
+
+        // ── ATR Stop (dinâmico, dentro do range) ─────────────────────
+        let atrTxt = '—', atrCls = 'text-gray-500';
+        if (sig && sig.atr_sl_pct != null) {
+          atrTxt = sig.atr_sl_pct.toFixed(1) + '%';
+          atrCls = sig.atr_sl_pct > 6 ? 'text-red-400' : sig.atr_sl_pct > 4 ? 'text-orange-400' : 'text-green-400';
+        }
+
+        // ── Circuit Breaker ──────────────────────────────────────────
+        const cbCls = tradesToday >= maxTrades - 2 ? 'text-red-400'
+                    : tradesToday >= maxTrades * 0.6 ? 'text-orange-400' : 'text-green-400';
+
+        // ── Slots ────────────────────────────────────────────────────
+        const slotsCls = openSlots >= maxSlots ? 'text-red-400'
+                       : openSlots >= maxSlots - 1 ? 'text-orange-400' : 'text-cyan-400';
+
+        return `<tr class="border-t border-gray-800/60 hover:bg-gray-800/20 transition-colors">
+          <td class="py-2.5 pr-4">
+            <span class="font-bold text-white text-xs">${c.sym}</span>
+            <span class="text-gray-600 text-[10px] ml-1">${c.pair}</span>
+          </td>
+          <td class="py-2.5 pr-4 text-center">
+            <span class="${rCls} text-[10px] font-bold px-2 py-0.5 rounded-full">${regime}</span>
+          </td>
+          <td class="py-2.5 pr-4 text-center">
+            ${scoreCell}
+          </td>
+          <td class="py-2.5 pr-4 text-center">
+            <span class="${mtfCls} text-[10px] font-medium">${mtfTxt}</span>
+          </td>
+          <td class="py-2.5 pr-4 text-center">
+            <span class="${slRangeCls} text-[10px] font-mono font-bold">${slRange}</span>
+          </td>
+          <td class="py-2.5 pr-4 text-center">
+            <span class="${atrCls} text-[10px] font-mono font-bold">${atrTxt}</span>
+          </td>
+          <td class="py-2.5 pr-4 text-center">
+            <span class="${cbCls} text-[10px] font-mono font-bold">${tradesToday}/${maxTrades}</span>
+          </td>
+          <td class="py-2.5 text-center">
+            <span class="${slotsCls} text-[10px] font-mono font-bold">${openSlots}/${maxSlots}</span>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    // ── Portfolio Chart ───────────────────────────────────────────────────
+    if (s.history && s.history.length > 0) {
+      fullHistory = s.history;
+      renderChart();
+    }
+
+    // ── Allocation Chart ─────────────────────────────────────────────────
+    const prices = s.prices || {};
+    const labels = ['BRL'], values = [usdAvail * usdBrl], colors = ['#6366f1'];
+    const allocMap = { BTC: '#f97316', ETH: '#3b82f6', SOL: '#a855f7' };
+    CRYPTOS.forEach(c => {
+      const qty2 = _holdings[c.sym] || 0;
+      if (qty2 > 0 && prices[c.pair]) {
+        labels.push(c.sym);
+        values.push(qty2 * prices[c.pair].price * usdBrl);
+        colors.push(allocMap[c.sym] || '#6366f1');
+      }
+    });
+    allocationChart.data.labels = labels;
+    allocationChart.data.datasets[0].data = values;
+    allocationChart.data.datasets[0].backgroundColor = colors;
+    allocationChart.update('none');
+    const tot = values.reduce((a, b) => a + b, 0);
+    document.getElementById('allocation-legend').innerHTML = labels.map((l, i) =>
+      `<div class="flex justify-between"><span style="color:${colors[i]}">● ${l}</span><span>R$ ${fmtBRL(values[i])} (${tot > 0 ? (values[i]/tot*100).toFixed(1) : 0}%)</span></div>`
+    ).join('');
+
+    // ── Histórico de Trades ───────────────────────────────────────────────
+    const trades = s.trades || [];
+    const tradesList = document.getElementById('trades-list');
+    if (trades.length === 0) {
+      tradesList.innerHTML = '<p class="text-gray-500 text-sm text-center py-8">Nenhum trade ainda...</p>';
+    } else {
+      const totalBRL = (s.portfolio || {}).total_brl || 0;
+      tradesList.innerHTML = trades.filter(t => (t.usd || 0) >= 0.01).map(t => {
+        const isBuy   = t.side === 'BUY';
+        const valBRL  = (t.usd || 0) * usdBrl;
+        const feesBRL = (t.fee || 0) * usdBrl;
+        const raw     = t.strategy || 'manual';
+        const colon   = raw.indexOf(':');
+        const stratName  = colon === -1 ? raw : raw.slice(0, colon);
+        const stratReason = colon === -1 ? '' : raw.slice(colon + 1);
+
+        // Motivo legível
+        let motivo = '';
+        if (isBuy && !stratReason)               motivo = '📗 Compra';
+        else if (stratReason.startsWith('pyramid')) {
+          const n = stratReason.match(/\d+/)?.[0] || '';
+          motivo = `▲ Pyramid${n ? ' x' + n : ''}`;
+        }
+        else if (stratReason.startsWith('TP'))    motivo = `🎯 Take Profit ${stratReason.slice(2)}`;
+        else if (stratReason.startsWith('SL'))    motivo = `🛑 Stop Loss ${stratReason.slice(2)}`;
+        else if (stratReason === 'TRAILING')      motivo = '📉 Trailing Stop';
+        else if (stratReason === 'SELL')          motivo = '📉 Sinal Venda';
+        else if (stratReason)                     motivo = stratReason;
+
+        // Pyramid badge
+        const pyramidMatch = stratReason.match(/^pyramid(\d+)$/);
+        const pyramidBadge = pyramidMatch
+          ? `<span class="text-[9px] px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 border border-yellow-500/20 font-bold">▲×${pyramidMatch[1]}</span>`
+          : '';
+
+        // % do patrimônio
+        const pctPatr = totalBRL > 0 ? ((valBRL / totalBRL) * 100).toFixed(2) + '%' : '—';
+
+        const time = (t.time || '').substring(11, 19) || (t.time || '').substring(0, 8);
+        const pair = t.pair || ((t.symbol || '?') + '-USD');
+
+        return `<div class="trade-${t.side.toLowerCase()} bg-gray-800/40 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="${isBuy ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'} text-xs font-bold px-2 py-0.5 rounded shrink-0">${t.side}</span>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <p class="font-semibold text-white text-sm leading-none">${pair}</p>
+                ${pyramidBadge}
+              </div>
+              <p class="text-gray-400 text-[11px] mt-0.5">${stratName}${motivo ? ' · ' + motivo : ''}</p>
+              <p class="text-gray-600 text-[10px] mt-0.5">${pctPatr} do patrimônio · fee R$ ${fmtBRL(feesBRL)}</p>
+            </div>
+          </div>
+          <div class="text-right shrink-0">
+            <p class="${isBuy ? 'text-green-300' : 'text-red-300'} text-sm font-semibold font-mono">${isBuy ? '-' : '+'}R$ ${fmtBRL(valBRL)}</p>
+            <p class="text-gray-600 text-[10px] mt-0.5">${time}</p>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // ── Feed de Sinais ────────────────────────────────────────────────────
+    const feed = s.feed || [];
+    const feedList = document.getElementById('feed-list');
+    if (feed.length === 0) {
+      feedList.innerHTML = '<p class="text-gray-500 text-sm text-center py-8">Aguardando sinais...</p>';
+    } else {
+      const stratShort = {
+        'Donchian Breakout': 'DONCH', 'EMA Pullback': 'EMA',
+        'MACD Momentum': 'MACD',
+      };
+      // Map note text to readable filter block reasons
+      const filterReasonMap = {
+        'adx': 'ADX<25',
+        'adx<25': 'ADX<25',
+        'mtf': 'MTF❌',
+        'mtf_fail': 'MTF❌',
+        'multi_timeframe': 'MTF❌',
+        'bb': 'BB-wide',
+        'bb_wide': 'BB-wide',
+        'bollinger': 'BB-wide',
+        'obv': 'OBV❌',
+        'volume': 'Vol❌',
+        'cooldown': 'Cooldown',
+        'circuit': 'CircBrk',
+        'circuit_breaker': 'CircBrk',
+        'slots': 'MaxSlots',
+        'rsi': 'RSI>75',
+        'macd': 'MACD<0',
+        'slope': 'Slope❌',
+        'ema_slope': 'Slope❌',
+        'score': 'Score❌',
+        'regime': 'Bear🚫',
+        'bear': 'Bear🚫',
+        'market_mode': 'Bear🚫',
+      };
+
+      feedList.innerHTML = feed.slice(0, 60).map(f => {
+        const sig      = f.signal || f.decision || 'HOLD';
+        const isB      = sig === 'BUY', isS = sig === 'SELL';
+        const borderCls = isB ? 'border-l-2 border-green-500' : isS ? 'border-l-2 border-red-500' : 'border-l-2 border-gray-700';
+        const sigCls    = isB ? 'bg-green-500/20 text-green-400' : isS ? 'bg-red-500/20 text-red-400' : 'bg-gray-700/40 text-gray-500';
+        const strat     = stratShort[f.strategy] || f.strategy || '—';
+        const stratFull = f.strategy || '—';
+        const pair      = f.pair || '—';
+        const pairShort = pair.replace('-USD', '');
+        const price     = f.price ? 'R$ ' + fmtBRL(f.price * usdBrl) : '—';
+        const note      = f.note || '';
+        const time      = (f.time || '').length > 8 ? f.time.substring(11, 19) : (f.time || '');
+        const cycle     = f.cycle ? ` · #${f.cycle}` : '';
+
+        // Determine filter block badge text
+        let blockReason = '';
+        if (!isB && !isS && note) {
+          const noteLow = note.toLowerCase();
+          for (const [key, label] of Object.entries(filterReasonMap)) {
+            if (noteLow.includes(key)) { blockReason = label; break; }
+          }
+        }
+
+        let noteBadge = '';
+        if (note) {
+          if (blockReason) {
+            // Blocked signal — show filter reason in red/orange
+            noteBadge = `<span class="text-[9px] px-1.5 py-0.5 rounded font-bold bg-red-500/10 text-red-400 border border-red-500/20">${blockReason}</span>`;
+          } else if (f.executed) {
+            // Executed signal — green/red checkmark
+            const execCls = isS
+              ? 'bg-red-500/15 text-red-400 border border-red-500/20'
+              : 'bg-green-500/15 text-green-400 border border-green-500/20';
+            noteBadge = `<span class="text-[9px] px-1.5 py-0.5 rounded font-medium ${execCls}">✓ ${note}</span>`;
+          } else if (note && note.includes('LIMIT')) {
+            // Pending limit order — amarelo com ícone de relógio
+            noteBadge = `<span class="text-[9px] px-1.5 py-0.5 rounded font-medium bg-yellow-500/15 text-yellow-400 border border-yellow-500/25">⏳ ${note}</span>`;
+          } else {
+            noteBadge = `<span class="text-[9px] px-1.5 py-0.5 rounded font-medium bg-gray-700/60 text-gray-400 border border-gray-700">${note}</span>`;
+          }
+        }
+
+        return `<div class="flex items-center justify-between gap-3 py-2 pl-2 ${borderCls}">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded shrink-0 ${sigCls}">${sig}</span>
+            <div class="min-w-0">
+              <p class="text-white text-xs font-semibold leading-none">${pairShort}</p>
+              <p class="text-gray-500 text-[10px] mt-0.5 truncate">${stratFull}</p>
+            </div>
+          </div>
+          <div class="text-right shrink-0">
+            <div class="flex items-center justify-end gap-1.5 mb-0.5">${noteBadge}<span class="text-gray-300 text-xs font-mono font-semibold">${price}</span></div>
+            <p class="text-gray-600 text-[10px] font-mono">${time}${cycle}</p>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // ── KPIs ─────────────────────────────────────────────────────────────
+    const kpis = s.kpis || {};
+    const tp   = s.tp_objective || {};
+
+    const el = id => document.getElementById(id);
+    const hasSells  = (kpis.sell_trades  || 0) > 0;
+    const hasWins   = (kpis.win_count    || 0) > 0;
+    const hasLosses = (kpis.loss_count   || 0) > 0;
+
+    // ── Overview global cards ─────────────────────────────────────────────
+    const wr = kpis.win_rate || 0;
+    const pf = kpis.profit_factor || 0;
+    const avgW = kpis.avg_win  || 0;
+    const avgL = kpis.avg_loss || 0;
+
+    if (el('kpi-win-rate')) {
+      el('kpi-win-rate').textContent = hasSells ? (wr * 100).toFixed(1) + '%' : '—';
+      el('kpi-win-rate').style.color = wr >= 0.55 ? '#4ade80' : wr >= 0.45 ? '#fb923c' : hasSells ? '#f87171' : '#9ca3af';
+    }
+    const wrBar = el('kpi-win-rate-bar');
+    if (wrBar) {
+      wrBar.style.width = Math.round(wr * 100) + '%';
+      wrBar.style.background = wr >= 0.55 ? '#4ade80' : wr >= 0.45 ? '#fb923c' : '#f87171';
+    }
+    if (el('kpi-profit-factor')) {
+      el('kpi-profit-factor').textContent = hasSells ? (pf > 0 ? pf.toFixed(2) : '0.00') : '—';
+      el('kpi-profit-factor').style.color = pf >= 1.5 ? '#4ade80' : pf >= 1.0 ? '#fb923c' : hasSells ? '#f87171' : '#9ca3af';
+    }
+    if (el('kpi-avg-win'))  el('kpi-avg-win').textContent  = hasWins   ? 'Ganho méd: +R$ ' + fmtBRL(avgW * usdBrl) : '—';
+    if (el('kpi-avg-loss')) el('kpi-avg-loss').textContent = hasLosses ? 'Perda méd: -R$ ' + fmtBRL(Math.abs(avgL) * usdBrl) : '—';
+
+    // Max Drawdown
+    const ddEl = el('kpi-max-dd');
+    if (ddEl) {
+      const dd = kpis.max_drawdown || 0;
+      ddEl.textContent = dd > 0 ? '-R$ ' + fmtBRL(dd * usdBrl) : '—';
+      ddEl.style.color = dd > 0 ? '#f87171' : '#9ca3af';
+    }
+
+    // Market Regime
+    if (el('kpi-market-mode')) {
+      const mm = (s.market_mode || '').toLowerCase();
+      el('kpi-market-mode').textContent = mm ? mm.toUpperCase() : '—';
+      el('kpi-market-mode').style.color = mm === 'bull' ? '#4ade80' : mm === 'bear' ? '#f87171' : '#facc15';
+      const tpEl = el('kpi-market-mode-tp');
+      if (tpEl) tpEl.textContent = tp.current != null ? tp.current.toFixed(1) + '%' : '—';
+    }
+
+    // Trade Size
+    if (el('kpi-trade-pct') && s.trade_pct != null) {
+      el('kpi-trade-pct').textContent = (s.trade_pct * 100).toFixed(0) + '%';
+    }
+
+    // Circuit Breaker & Slots (agora no header do card)
+    if (el('kpi-circuit-breaker')) {
+      const maxTrades = s.max_daily_trades || 10;
+      const tdToday   = s.trades_today != null ? s.trades_today : 0;
+      el('kpi-circuit-breaker').textContent = tdToday + '/' + maxTrades;
+      el('kpi-circuit-breaker').style.color = tdToday >= maxTrades - 2 ? '#f87171' : tdToday >= maxTrades * 0.6 ? '#fb923c' : '#22d3ee';
+    }
+    if (el('kpi-open-slots')) {
+      const maxSlots  = s.max_open_slots || 4;
+      const openCount = s.open_slots_count != null
+        ? s.open_slots_count
+        : Object.values(allSlots).filter(sl => (sl.qty || 0) > 0).length;
+      el('kpi-open-slots').textContent = openCount + '/' + maxSlots;
+      el('kpi-open-slots').style.color = openCount >= maxSlots ? '#f87171' : openCount >= maxSlots - 1 ? '#fb923c' : '#22d3ee';
+      const subOS = el('kpi-open-slots-sub');
+      if (subOS) subOS.textContent = openCount >= maxSlots ? '🔴 Cheio' : openCount + ' slots abertos';
+    }
+
+    // ── Tabela por estratégia ─────────────────────────────────────────────
+    const stTable = el('kpi-strategy-table');
+    if (stTable) {
+      const byStrat = (kpis.by_strategy) || {};
+      const stratDefs = [
+        { name: 'Donchian Breakout', icon: '🚀', short: 'Donchian' },
+        { name: 'MACD Momentum',     icon: '⚡', short: 'MACD'    },
+        { name: 'EMA Pullback',      icon: '📋', short: 'EMA PB'  },
+        { name: 'BB Reversion',      icon: '↩️', short: 'BB Rev'  },
+      ];
+
+      stTable.innerHTML = stratDefs.map(sd => {
+        const d = byStrat[sd.name] || {};
+        const n = d.n || 0;
+
+        // Win Rate — total e recente
+        const wrTot = d.win_rate != null ? (d.win_rate * 100).toFixed(1) + '%' : '—';
+        const recentWr = d.win_rate != null && d.edge_decay != null
+          ? ((d.win_rate + d.edge_decay) * 100).toFixed(1) + '%' : '—';
+        const wrCol = d.win_rate == null ? '#6b7280'
+          : d.win_rate >= 0.55 ? '#4ade80' : d.win_rate >= 0.45 ? '#fb923c' : '#f87171';
+
+        // Profit Factor
+        const pfVal = d.profit_factor != null ? d.profit_factor.toFixed(2) : '—';
+        const pfCol = d.profit_factor == null ? '#6b7280'
+          : d.profit_factor >= 1.5 ? '#4ade80' : d.profit_factor >= 1.0 ? '#fb923c' : '#f87171';
+
+        // Edge Decay
+        let edgeTxt = '—', edgeCol = '#6b7280', edgeIcon = '';
+        if (d.edge_decay != null && n >= 3) {
+          const pct = (d.edge_decay * 100).toFixed(1);
+          edgeIcon = d.edge_decay >= 0.02 ? '▲' : d.edge_decay <= -0.05 ? '▼▼' : d.edge_decay < 0 ? '▼' : '→';
+          edgeTxt  = edgeIcon + ' ' + (d.edge_decay >= 0 ? '+' : '') + pct + '%';
+          edgeCol  = d.edge_decay >= 0.02 ? '#4ade80' : d.edge_decay <= -0.05 ? '#f87171' : d.edge_decay < 0 ? '#fb923c' : '#9ca3af';
+        }
+
+        // Drawdown Contribution
+        const ddC = d.drawdown_contrib != null ? d.drawdown_contrib.toFixed(1) + '%' : '—';
+        const ddCCol = d.drawdown_contrib == null ? '#6b7280'
+          : d.drawdown_contrib >= 60 ? '#f87171' : d.drawdown_contrib >= 30 ? '#fb923c' : '#4ade80';
+
+        // MFE Capture
+        let mfeTxt = '—', mfeCol = '#6b7280';
+        if (d.mfe_capture != null) {
+          mfeTxt = d.mfe_capture.toFixed(1) + '%';
+          mfeCol = d.mfe_capture >= 80 ? '#4ade80' : d.mfe_capture >= 50 ? '#fb923c' : '#f87171';
+        }
+
+        // P&L realizado
+        const pnl    = d.realized_usd || 0;
+        const pnlBrl = pnl * usdBrl;
+        const pnlTxt = n > 0 ? (pnlBrl >= 0 ? '+' : '-') + 'R$ ' + fmtBRL(Math.abs(pnlBrl)) : '—';
+        const pnlCol = pnl > 0 ? '#4ade80' : pnl < 0 ? '#f87171' : '#6b7280';
+
+        // Barra win rate horizontal (40px)
+        const barW = d.win_rate != null ? Math.round(d.win_rate * 40) : 0;
+
+        return `<tr class="border-t border-gray-800/60 hover:bg-gray-800/20 transition-colors">
+          <td class="py-3 pr-3">
+            <div class="flex items-center gap-1.5">
+              <span>${sd.icon}</span>
+              <div>
+                <p class="text-xs font-semibold text-white">${sd.short}</p>
+                <p class="text-[9px] text-gray-600">${n} trades</p>
+              </div>
+            </div>
+          </td>
+          <td class="py-3 px-3 text-center">
+            <p class="text-xs font-bold font-mono" style="color:${wrCol}">${wrTot}</p>
+            <p class="text-[9px] text-gray-500">últ.10: ${recentWr}</p>
+            <div style="width:40px;height:2px;background:#21262d;border-radius:2px;margin:3px auto 0">
+              <div style="width:${barW}px;height:2px;background:${wrCol};border-radius:2px"></div>
+            </div>
+          </td>
+          <td class="py-3 px-3 text-center">
+            <p class="text-xs font-bold font-mono" style="color:${pfCol}">${pfVal}</p>
+            <p class="text-[9px] text-gray-600">${d.wins || 0}W · ${d.losses || 0}L</p>
+          </td>
+          <td class="py-3 px-3 text-center">
+            <p class="text-xs font-bold font-mono" style="color:${edgeCol}">${edgeTxt}</p>
+            <p class="text-[9px] text-gray-600">${n >= 3 ? 'últ.' + Math.min(10,n) + ' vs total' : 'aguardando'}</p>
+          </td>
+          <td class="py-3 px-3 text-center">
+            <p class="text-xs font-bold font-mono" style="color:${ddCCol}">${ddC}</p>
+            <p class="text-[9px] text-gray-600">do DD máx</p>
+          </td>
+          <td class="py-3 px-3 text-center">
+            <p class="text-xs font-bold font-mono" style="color:${mfeCol}">${mfeTxt}</p>
+            <p class="text-[9px] text-gray-600">do potencial TP</p>
+          </td>
+          <td class="py-3 pl-3 text-center">
+            <p class="text-xs font-bold font-mono" style="color:${pnlCol}">${pnlTxt}</p>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    // ── Market Mode global — header badge + banner ───────────────────────
+    const mm = (s.market_mode || '').toLowerCase();
+    if (mm) {
+      // Header badge
+      const hdrMode = el('header-market-mode');
+      const hdrIcon = el('header-mode-icon');
+      const hdrLabel = el('header-mode-label');
+      if (hdrMode) {
+        hdrMode.className = `hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full ${marketModeCls(mm)}`;
+        if (hdrIcon)  hdrIcon.textContent  = marketModeIcon(mm);
+        if (hdrLabel) hdrLabel.textContent = mm.toUpperCase();
+      }
+      // Regime banner above filters table
+      const banner = el('regime-banner');
+      const bannerText = el('regime-banner-text');
+      if (banner) {
+        banner.className = `rounded-lg px-4 py-2.5 mb-3 flex items-center justify-between ${marketModeCls(mm)}`;
+        if (bannerText) bannerText.textContent = `${marketModeIcon(mm)} ${marketModeDesc(mm)}`;
+      }
+
+      // ── Bear Signals badges ───────────────────────────────────────────────
+      const bearRow = el('bear-signals-row');
+      if (bearRow) {
+        const signals = s.bear_signals || [];
+        if (signals.length > 0) {
+          bearRow.classList.remove('hidden');
+          const iconMap = {
+            'Slope EMA200':      '📉',
+            'Breadth':           '🌐',
+            'OI caindo':         '📊',
+            'OI':                '📊',
+            'Vol implícita':     '⚡',
+            'Preço < EMA200':    '🔴',
+            'Reclassificado':    '⚠️',
+            'Downgrade':         '⬇️',
+          };
+          bearRow.innerHTML = signals.map(sig => {
+            const icon = Object.entries(iconMap).find(([k]) => sig.includes(k))?.[1] || '🔻';
+            const col  = mm === 'bear' ? 'bg-red-900/50 border-red-500/40 text-red-300'
+                       : 'bg-orange-900/40 border-orange-500/30 text-orange-300';
+            return `<span class="text-[9px] font-semibold px-2 py-0.5 rounded border ${col}">${icon} ${sig}</span>`;
+          }).join('');
+        } else {
+          bearRow.classList.add('hidden');
+          bearRow.innerHTML = '';
+        }
+      }
+    }
+
+    // Candles
+    if (typeof loadCandles === 'function') loadCandles();
+  }
+
+  // ─── Portfolio Chart ─────────────────────────────────────────────────
+  function setPeriod(p) {
+    currentPeriod = p;
+    document.querySelectorAll('#period-selector button').forEach(b =>
+      b.classList.toggle('active', b.dataset.period === p));
+    renderChart();
+  }
+
+  function renderChart() {
+    if (!fullHistory.length) return;
+    const now = fullHistory[fullHistory.length - 1]?.ts || Date.now() / 1000;
+    const periods = { '1m': 60, '5m': 300, '15m': 900, '1h': 3600, '6h': 21600, '1d': 86400 };
+    const cutoff = now - (periods[currentPeriod] || 3600);
+    const filtered = fullHistory.filter(h => h.ts >= cutoff);
+    const data = filtered.length > 1 ? filtered : fullHistory.slice(-50);
+    portfolioChart.data.labels = data.map(h => h.time);
+    portfolioChart.data.datasets[0].data = data.map(h => h.total);
+    portfolioChart.update('none');
+  }
+
+  // ─── Candle Chart ─────────────────────────────────────────────────────
+  let candleChart = null, macdChart = null, rsiChart = null, adxChart = null, obvChart = null, bbRevChart = null;
+  let candleSeries = null, macdFastSeries = null, macdSlowSeries = null, macdHistSeries = null;
+  let rsiSeries = null, adxSeries = null, obvSeries = null, obvZeroSeries = null;
+  let bbRevRsiSeries = null, bbRevOversoldLine = null, bbRevMidLine = null;
+  let ema9Series = null, ema21Series = null, ema50Series = null;
+  let donchUpperSeries = null, donchLowerSeries = null;
+  let bbUpperSeries = null, bbLowerSeries = null, bbMidSeries = null;
+  let volumeSeries = null;
+  let macdZeroSeries = null;
+  let rsiOBSeries = null, rsiOSSeries = null, rsiMidSeries = null;
+  let adxTrendSeries = null, adxRangeSeries = null;
+  let candlePair = 'BTC-USD', candleGranularity = 'ONE_HOUR';
+
+  // Cria wrapper com título acima do elemento do gráfico
+  function makeChartWrapper(label, sublabel, insertAfter) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-top:10px;';
+    wrap.innerHTML = `<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px;">
+      <span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;">${label}</span>
+      <span style="font-size:9px;color:#4b5563;">${sublabel}</span>
+    </div>`;
+    const chartDiv = document.createElement('div');
+    wrap.appendChild(chartDiv);
+    insertAfter.after(wrap);
+    return { wrap, chartDiv };
+  }
+
+  function initCandleChart() {
+    const container = document.getElementById('candle-chart');
+    if (!container || container.clientWidth < 10) return;
+    const w = container.clientWidth;
+
+    const commonOpts = {
+      width: w,
+      layout: { background: { color: 'transparent' }, textColor: '#6b7280' },
+      grid: { vertLines: { color: '#21262d' }, horzLines: { color: '#21262d' } },
+      timeScale: { borderColor: '#30363d', timeVisible: true, secondsVisible: false },
+      rightPriceScale: { borderColor: '#30363d' },
+      crosshair: { mode: 1 },
+      handleScroll: true, handleScale: true,
+    };
+
+    // ── 1. Candles (preço principal) ─────────────────────────────────────
+    candleChart = LightweightCharts.createChart(container, { ...commonOpts, height: 240 });
+    candleSeries = candleChart.addCandlestickSeries({
+      upColor: '#4ade80', downColor: '#f87171',
+      borderUpColor: '#4ade80', borderDownColor: '#f87171',
+      wickUpColor: '#4ade80', wickDownColor: '#f87171',
+    });
+    // Volume (base do OBV — barras coloridas por direção)
+    volumeSeries = candleChart.addHistogramSeries({
+      priceFormat: { type: 'volume' },
+      priceScaleId: 'volume',
+      scaleMargins: { top: 0.80, bottom: 0 },
+    });
+    // EMA 9 · 21 · 50
+    ema9Series  = candleChart.addLineSeries({ color: '#06b6d4', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+    ema21Series = candleChart.addLineSeries({ color: '#818cf8', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+    ema50Series = candleChart.addLineSeries({ color: '#c084fc', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+    // Donchian 20 (canal)
+    donchUpperSeries = candleChart.addLineSeries({ color: 'rgba(249,115,22,0.7)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
+    donchLowerSeries = candleChart.addLineSeries({ color: 'rgba(249,115,22,0.7)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false });
+    // Bollinger Bands (volatilidade, referência visual)
+    bbUpperSeries = candleChart.addLineSeries({ color: 'rgba(99,102,241,0.5)', lineWidth: 1, lineStyle: 3, priceLineVisible: false, lastValueVisible: false });
+    bbLowerSeries = candleChart.addLineSeries({ color: 'rgba(99,102,241,0.5)', lineWidth: 1, lineStyle: 3, priceLineVisible: false, lastValueVisible: false });
+    bbMidSeries   = candleChart.addLineSeries({ color: 'rgba(99,102,241,0.25)', lineWidth: 1, lineStyle: 0, priceLineVisible: false, lastValueVisible: false });
+
+    // ── 2. MACD (12,26,9) — linha MACD > 0 é filtro ativo ───────────────
+    const { wrap: macdWrap, chartDiv: macdEl } = makeChartWrapper(
+      'MACD (12·26·9)', '— linha azul > 0 = filtro ativo | histograma verde = momentum positivo',
+      container
+    );
+    macdChart = LightweightCharts.createChart(macdEl, { ...commonOpts, height: 80 });
+    macdFastSeries = macdChart.addLineSeries({ color: '#3b82f6', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: true });
+    macdSlowSeries = macdChart.addLineSeries({ color: '#f87171', lineWidth: 1, priceLineVisible: false, lastValueVisible: false });
+    macdHistSeries = macdChart.addHistogramSeries({ priceLineVisible: false, lastValueVisible: false });
+    macdZeroSeries = macdChart.addLineSeries({ color: 'rgba(156,163,175,0.35)', lineWidth: 1, lineStyle: 0, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+
+    // ── 3. RSI (14) — filtro MACD (RSI < 75) e EMA Pullback ─────────────
+    const { wrap: rsiWrap, chartDiv: rsiEl } = makeChartWrapper(
+      'RSI (14)', '— MACD bloqueado se RSI > 75 | linha verde 35 = entrada BB Reversion | linha vermelha 75 = sobrecomprado',
+      macdWrap
+    );
+    rsiChart = LightweightCharts.createChart(rsiEl, { ...commonOpts, height: 80 });
+    rsiSeries   = rsiChart.addLineSeries({ color: '#facc15', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: true });
+    rsiOBSeries = rsiChart.addLineSeries({ color: 'rgba(248,113,113,0.4)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+    rsiOSSeries = rsiChart.addLineSeries({ color: 'rgba(74,222,128,0.4)',  lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+    rsiMidSeries = rsiChart.addLineSeries({ color: 'rgba(156,163,175,0.25)', lineWidth: 1, lineStyle: 0, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+
+    // ── 4. OBV — filtro de volume do Donchian (OBV em nova máxima = breakout real)
+    const { wrap: obvWrap, chartDiv: obvEl } = makeChartWrapper(
+      'OBV — On-Balance Volume', '— crescente = acumulação institucional | decrescente = distribuição (informativo)',
+      rsiWrap
+    );
+    obvChart     = LightweightCharts.createChart(obvEl, { ...commonOpts, height: 80 });
+    obvSeries    = obvChart.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: true });
+    obvZeroSeries = obvChart.addLineSeries({ color: 'rgba(156,163,175,0.25)', lineWidth: 1, lineStyle: 0, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+
+    // ── 5. ADX (14) — Market Regime Engine: >20 trending, <20 chop ──────
+    const { wrap: adxWrap, chartDiv: adxEl } = makeChartWrapper(
+      'ADX (14) — Regime de Mercado', '— roxo = força da tendência | verde ≥20 = TRENDING (Donchian/MACD/EMA) | amarelo <20 = CHOP (BB Reversion ativo)',
+      obvWrap
+    );
+    adxChart       = LightweightCharts.createChart(adxEl, { ...commonOpts, height: 80 });
+    adxSeries      = adxChart.addLineSeries({ color: '#e879f9', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: true });
+    adxTrendSeries = adxChart.addLineSeries({ color: 'rgba(74,222,128,0.5)',  lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+    adxRangeSeries = adxChart.addLineSeries({ color: 'rgba(250,204,21,0.5)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+
+    // ── 6. BB Reversion — RSI com zona oversold (sinal de reversão) ──────
+    const { wrap: bbRevWrap, chartDiv: bbRevEl } = makeChartWrapper(
+      'BB Reversion — RSI (14)',
+      '— RSI < 35 + preço < BB inferior = sinal de reversão CHOP | linha verde = zona de entrada | linha vermelha = saída na média BB',
+      adxWrap
+    );
+    bbRevChart       = LightweightCharts.createChart(bbRevEl, { ...commonOpts, height: 80 });
+    bbRevRsiSeries   = bbRevChart.addLineSeries({ color: '#a78bfa', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: true });
+    bbRevOversoldLine = bbRevChart.addLineSeries({ color: 'rgba(74,222,128,0.6)',  lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+    bbRevMidLine      = bbRevChart.addLineSeries({ color: 'rgba(248,113,113,0.4)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+
+    // ── Sync scroll entre todos os charts ────────────────────────────────
+    const subCharts = [macdChart, rsiChart, obvChart, adxChart, bbRevChart];
+    subCharts.forEach(ch => {
+      candleChart.timeScale().subscribeVisibleTimeRangeChange(range => {
+        try { ch.timeScale().setVisibleRange(range); } catch(e) {}
+      });
+    });
+
+    // ── ResizeObserver ────────────────────────────────────────────────────
+    new ResizeObserver(() => {
+      const nw = container.clientWidth;
+      [candleChart, ...subCharts, bbRevChart].filter(Boolean).forEach(c => {
+        try { c.applyOptions({ width: nw }); } catch(e) {}
+      });
+    }).observe(container);
+
+    loadCandles();
+  }
+
+  function setCandlePair(pair) {
+    candlePair = pair;
+    document.querySelectorAll('.candle-pair-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.pair === pair));
+    loadCandles();
+  }
+
+  function setCandleTF(gran) {
+    candleGranularity = gran;
+    document.querySelectorAll('.candle-tf-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.tf === gran));
+    loadCandles();
+  }
+
+  async function loadCandles() {
+    if (!candleSeries) return;
+    try {
+      const limit = candleGranularity === 'ONE_DAY' ? 250 : 150;
+      const res = await fetch(`/candles/${candlePair}?granularity=${candleGranularity}&limit=${limit}`);
+      const data = await res.json();
+      if (!data.length) return;
+
+      // API retorna objetos {time, open, high, low, close, volume} com time como Unix timestamp
+      const candles = data.map(d => ({
+        time:   typeof d.time  === 'number' ? d.time  :
+                typeof d.start === 'number' ? d.start :
+                Math.floor(new Date(d[0]).getTime() / 1000),
+        open:   +(d.open   ?? d[3] ?? 0),
+        high:   +(d.high   ?? d[2] ?? 0),
+        low:    +(d.low    ?? d[1] ?? 0),
+        close:  +(d.close  ?? d[4] ?? 0),
+        volume: +(d.volume ?? d[5] ?? 0),
+      })).sort((a, b) => a.time - b.time);
+
+      candleSeries.setData(candles);
+      document.getElementById('candle-price').textContent = 'R$ ' + fmtBRL(candles[candles.length-1].close * usdBrl);
+
+      // ── Helpers ──────────────────────────────────────────────────────────
+      const closes  = candles.map(c => c.close);
+      const highs   = candles.map(c => c.high);
+      const lows    = candles.map(c => c.low);
+      const volumes = candles.map(c => c.volume || 0);
+
+      const calcEMA = (data, p) => {
+        const k = 2 / (p + 1), ema = [data[0]];
+        for (let i = 1; i < data.length; i++) ema.push(data[i] * k + ema[i-1] * (1 - k));
+        return ema;
+      };
+      const rollingMean = (data, p) => data.map((_, i) => {
+        const sl = data.slice(Math.max(0, i - p + 1), i + 1);
+        return sl.reduce((a, b) => a + b, 0) / sl.length;
+      });
+      const rollingStd = (data, p) => data.map((_, i) => {
+        const sl = data.slice(Math.max(0, i - p + 1), i + 1);
+        const m = sl.reduce((a, b) => a + b, 0) / sl.length;
+        return Math.sqrt(sl.reduce((a, b) => a + (b - m) ** 2, 0) / sl.length);
+      });
+
+      // ── Volume colorido (base OBV) ────────────────────────────────────
+      if (volumeSeries) {
+        volumeSeries.setData(candles.map((c, i) => ({
+          time: c.time,
+          value: c.volume || 0,
+          color: c.close >= c.open ? 'rgba(74,222,128,0.4)' : 'rgba(248,113,113,0.4)',
+        })));
+      }
+
+      // ── EMA 9 · 21 · 50 ──────────────────────────────────────────────
+      const ema9  = calcEMA(closes, 9);
+      const ema21 = calcEMA(closes, 21);
+      const ema50 = calcEMA(closes, 50);
+      ema9Series.setData(candles.map((c,i) => ({ time: c.time, value: ema9[i]  })));
+      ema21Series.setData(candles.map((c,i) => ({ time: c.time, value: ema21[i] })));
+      ema50Series.setData(candles.map((c,i) => ({ time: c.time, value: ema50[i] })));
+
+      // ── Donchian 20 ──────────────────────────────────────────────────
+      const dcP = 20;
+      donchUpperSeries.setData(candles.map((c, i) => ({
+        time: c.time, value: Math.max(...highs.slice(Math.max(0, i - dcP + 1), i + 1))
+      })));
+      donchLowerSeries.setData(candles.map((c, i) => ({
+        time: c.time, value: Math.min(...lows.slice(Math.max(0, i - dcP + 1), i + 1))
+      })));
+
+      // ── Bollinger Bands (20, 2) — referência de volatilidade ────────
+      const bbP = 20, bbMult = 2;
+      const bbMid  = rollingMean(closes, bbP);
+      const bbStd  = rollingStd(closes, bbP);
+      bbUpperSeries.setData(candles.map((c,i) => ({ time: c.time, value: bbMid[i] + bbMult * bbStd[i] })));
+      bbLowerSeries.setData(candles.map((c,i) => ({ time: c.time, value: bbMid[i] - bbMult * bbStd[i] })));
+      bbMidSeries.setData(candles.map((c,i)   => ({ time: c.time, value: bbMid[i] })));
+
+      // ── MACD (12, 26, 9) — linha MACD > 0 é o filtro ────────────────
+      const ema12 = calcEMA(closes, 12), ema26 = calcEMA(closes, 26);
+      const macdLine = ema12.map((v, i) => v - ema26[i]);
+      const macdSig  = calcEMA(macdLine, 9);
+      macdFastSeries.setData(candles.map((c,i) => ({ time: c.time, value: macdLine[i] })));
+      macdSlowSeries.setData(candles.map((c,i) => ({ time: c.time, value: macdSig[i]  })));
+      macdHistSeries.setData(candles.map((c,i) => ({
+        time: c.time,
+        value: macdLine[i] - macdSig[i],
+        color: macdLine[i] >= macdSig[i] ? 'rgba(74,222,128,0.7)' : 'rgba(248,113,113,0.7)',
+      })));
+      // Linha zero — filtro "MACD line > 0"
+      macdZeroSeries.setData(candles.map(c => ({ time: c.time, value: 0 })));
+
+      // ── RSI (14) — acima de 75 bloqueia MACD, abaixo de 30 sobrevenda ──
+      const rsiP = 14;
+      const rsiVals = closes.map((_, i) => {
+        if (i < rsiP) return 50;
+        const sl    = closes.slice(i - rsiP, i);
+        const gains = sl.map((v, j) => j > 0 ? Math.max(0, v - sl[j-1]) : 0);
+        const losses= sl.map((v, j) => j > 0 ? Math.max(0, sl[j-1] - v) : 0);
+        const avgG  = gains.reduce((a,b) => a+b, 0) / rsiP;
+        const avgL  = losses.reduce((a,b) => a+b, 0) / rsiP;
+        return avgL === 0 ? 100 : 100 - (100 / (1 + avgG / avgL));
+      });
+      rsiSeries.setData(candles.map((c,i) => ({ time: c.time, value: rsiVals[i] })));
+      rsiOBSeries.setData(candles.map(c => ({ time: c.time, value: 70 })));  // bloqueio MACD
+      rsiOSSeries.setData(candles.map(c => ({ time: c.time, value: 30 })));  // sobrevenda
+      rsiMidSeries.setData(candles.map(c => ({ time: c.time, value: 50 })));
+
+      // ── ADX (14) — detecta regime de mercado ─────────────────────────
+      // ADX > 20 → trending (Donchian+EMA ativos) | < 20 → ranging/chop
+      const adxP = 14;
+      const adxVals = (() => {
+        const tr = candles.map((c, i) => {
+          if (i === 0) return c.high - c.low;
+          return Math.max(c.high - c.low, Math.abs(c.high - closes[i-1]), Math.abs(c.low - closes[i-1]));
+        });
+        const dmPlus  = candles.map((c, i) => {
+          if (i === 0) return 0;
+          const up = c.high - candles[i-1].high, dn = candles[i-1].low - c.low;
+          return up > dn && up > 0 ? up : 0;
+        });
+        const dmMinus = candles.map((c, i) => {
+          if (i === 0) return 0;
+          const up = c.high - candles[i-1].high, dn = candles[i-1].low - c.low;
+          return dn > up && dn > 0 ? dn : 0;
+        });
+        const smoothed = (arr) => {
+          const out = new Array(arr.length).fill(0);
+          out[adxP] = arr.slice(0, adxP).reduce((a, b) => a + b, 0);
+          for (let i = adxP + 1; i < arr.length; i++) out[i] = out[i-1] - out[i-1]/adxP + arr[i];
+          return out;
+        };
+        const atrS = smoothed(tr), dpS = smoothed(dmPlus), dmS = smoothed(dmMinus);
+        const diP = atrS.map((v, i) => v ? 100 * dpS[i] / v : 0);
+        const diM = atrS.map((v, i) => v ? 100 * dmS[i] / v : 0);
+        const dx  = diP.map((v, i) => {
+          const s = v + diM[i]; return s ? 100 * Math.abs(v - diM[i]) / s : 0;
+        });
+        const adxRaw = smoothed(dx);
+        return adxRaw.map((v, i) => i < adxP * 2 ? 20 : v / adxP);
+      })();
+      adxSeries.setData(candles.map((c,i) => ({ time: c.time, value: Math.min(100, Math.max(0, adxVals[i])) })));
+      adxTrendSeries.setData(candles.map(c => ({ time: c.time, value: 20 }))); // trending threshold
+      adxRangeSeries.setData(candles.map(c => ({ time: c.time, value: 15 }))); // chop threshold
+
+      // ── OBV — On-Balance Volume (filtro confirmação breakout Donchian) ──
+      // OBV crescente junto com preço = breakout real com volume institucional
+      // OBV estagnado/caindo = breakout "seco" = bull trap potencial
+      const obvVals = (() => {
+        let obv = 0;
+        return candles.map((c, i) => {
+          if (i > 0) {
+            if (c.close > candles[i-1].close)      obv += (c.volume || 0);
+            else if (c.close < candles[i-1].close) obv -= (c.volume || 0);
+          }
+          return obv;
+        });
+      })();
+      obvSeries.setData(candles.map((c,i) => ({ time: c.time, value: obvVals[i] })));
+      obvZeroSeries.setData(candles.map(c => ({ time: c.time, value: 0 })));
+
+      // ── BB Reversion — RSI(14) com zonas oversold/saída ─────────────────
+      if (bbRevRsiSeries && bbRevChart) {
+        // RSI 14 (mesmo cálculo do sub-chart RSI existente, mas em roxo claro)
+        const rsiPeriod = 14;
+        const bbRevRsiVals = (() => {
+          const r = new Array(closes.length).fill(50);
+          for (let i = rsiPeriod; i < closes.length; i++) {
+            const sl = closes.slice(i - rsiPeriod, i);
+            let gains = 0, losses = 0;
+            for (let j = 1; j < sl.length; j++) {
+              const d = sl[j] - sl[j-1];
+              if (d > 0) gains += d; else losses -= d;
+            }
+            const avgG = gains / rsiPeriod;
+            const avgL = losses / rsiPeriod;
+            r[i] = avgL === 0 ? 100 : 100 - (100 / (1 + avgG / avgL));
+          }
+          return r;
+        })();
+        bbRevRsiSeries.setData(candles.map((c,i) => ({ time: c.time, value: bbRevRsiVals[i] })));
+        // Linha 35 — zona de entrada BB Reversion (RSI oversold)
+        bbRevOversoldLine.setData(candles.map(c => ({ time: c.time, value: 35 })));
+        // Linha 60 — zona de saída / retorno à média
+        bbRevMidLine.setData(candles.map(c => ({ time: c.time, value: 60 })));
+      }
+
+    } catch(e) { console.error('[Candles]', e); }
+  }
+
+  window.addEventListener('load', () => {
+    const el = document.getElementById('candle-chart');
+    if (el && el.clientWidth > 0) initCandleChart();
+    else setTimeout(initCandleChart, 300);
+  });
+
+  // ─── Modal de Trade ────────────────────────────────────────────────────
+  function openTradeModal(side, pair) {
+    const sym = pair.split('-')[0];
+    _modalSide = side; _modalPair = pair;
+    const modal = document.getElementById('trade-modal');
+    document.getElementById('modal-title').textContent = (side === 'buy' ? 'Comprar ' : 'Vender ') + sym;
+    const prices = window._lastPrices || {};
+    const price  = prices[pair] ? prices[pair].price : 0;
+    document.getElementById('modal-subtitle').textContent = price ? `Preço atual: R$ ${fmtBRL(price * usdBrl)}` : '—';
+    document.getElementById('modal-confirm').style.background = side === 'buy' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)';
+    document.getElementById('modal-confirm').style.color       = side === 'buy' ? '#4ade80' : '#f87171';
+    document.getElementById('modal-confirm').style.borderColor = side === 'buy' ? 'rgba(34,197,94,0.4)' : 'rgba(239,68,68,0.4)';
+    document.getElementById('modal-input').value = '';
+    modal.style.display = 'flex';
+    setTimeout(() => document.getElementById('modal-input').focus(), 50);
+  }
+
+  function closeTradeModal() {
+    document.getElementById('trade-modal').style.display = 'none';
+  }
+
+  function confirmTrade() {
+    const input = document.getElementById('modal-input');
+    const val   = parseFloat(input.value);
+    if (!val || val <= 0) { input.focus(); return; }
+    const btn = document.getElementById('modal-confirm');
+    btn.disabled = true; btn.textContent = '...';
+    (async () => {
+      try {
+        const url = _modalSide === 'buy'
+          ? `/trade/buy?pair=${_modalPair}&brl=${val}`
+          : `/trade/sell?pair=${_modalPair}&brl=${val}`;
+        const res  = await fetch(url, { method: 'POST' });
+        const data = await res.json();
+        if (!data.ok) alert('Erro: ' + data.error);
+        else closeTradeModal();
+      } catch(e) { alert('Erro de conexão'); }
+      finally { btn.disabled = false; btn.textContent = 'Confirmar'; }
+    })();
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTradeModal(); });
+
+  // ─── Countdown Timer ──────────────────────────────────────────────────
+  let _cycleStartTs = 0, _cycleInterval = 3600, _nextCycleTs = 0, _synced = false;
+  let countdownInterval = null;
+
+  function fmtTimer(s) {
+    if (s <= 0) return '0s';
+    if (s < 60) return s + 's';
+    return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+  }
+
+  (function startCountdown() {
+    countdownInterval = setInterval(() => {
+      const timerEl  = document.getElementById('cycle-timer');
+      const execEl   = document.getElementById('cycle-executing');
+      const hdrEl    = document.getElementById('header-cycle-timer');
+      if (!_synced) {
+        if (timerEl) timerEl.textContent = '--';
+        if (hdrEl)   hdrEl.textContent   = '--';
+        return;
+      }
+      // Usa next_cycle_ts (hora cheia SP) se disponível; fallback para start+interval
+      const nowTs     = Math.floor(Date.now() / 1000);
+      const remaining = _nextCycleTs > 0
+        ? Math.max(0, _nextCycleTs - nowTs)
+        : Math.max(0, _cycleInterval - (nowTs - _cycleStartTs));
+      const executing = remaining === 0;
+      if (executing) {
+        const pulse = Math.floor(Date.now() / 600) % 2 === 0;
+        const txt = pulse ? 'executando…' : '· · ·';
+        if (timerEl) timerEl.style.display = 'none';
+        if (execEl)  { execEl.style.display = 'inline'; execEl.textContent = txt; }
+        if (hdrEl)   { hdrEl.textContent = txt; hdrEl.style.color = '#f97316'; }
+      } else {
+        const t = fmtTimer(remaining);
+        if (timerEl) { timerEl.style.display = 'inline'; timerEl.textContent = t; }
+        if (execEl)  execEl.style.display = 'none';
+        if (hdrEl)   { hdrEl.textContent = t; hdrEl.style.color = ''; }
+      }
+    }, 500);
+  })();
+
+  // ─── WebSocket ────────────────────────────────────────────────────────
+  function connect() {
+    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws    = new WebSocket(`${proto}://${location.host}/ws`);
+    ws.onmessage = e => {
+      try {
+        const data = JSON.parse(e.data);
+        window._lastPrices = data.prices || {};
+        window._lastState  = data;           // expõe estado completo para debug/inspeção
+        updateState(data);
+      } catch(err) {
+        console.error('[WS] Erro:', err);
+      }
+    };
+    ws.onclose = () => setTimeout(connect, 3000);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', connect);
+  } else {
+    connect();
+  }
+  </script>
+
+</body>
+</html>
