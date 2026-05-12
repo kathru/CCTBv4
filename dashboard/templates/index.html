@@ -168,8 +168,9 @@
     <div id="crypto-grid" class="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
 
 
-    <!-- ── Filtros Ativos por Par ── -->
-    <div class="card p-5">
+    <!-- ── Filtros Ativos + Market Breadth ── -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2 card p-5">
       <div class="flex items-center justify-between mb-3">
         <h3 class="font-semibold text-white">Filtros Ativos</h3>
         <span class="text-xs text-gray-500">Regime V4 · Score probabilístico · ATR Stop dinâmico — por ciclo</span>
@@ -313,6 +314,61 @@
       </div>
     </div>
 
+      <!-- Market Breadth — vertical -->
+      <div class="card p-5 flex flex-col">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold text-white">Market Breadth</h3>
+          <span id="breadth-label" class="text-xs font-bold px-2.5 py-1 rounded bg-gray-700 text-gray-300">N/A</span>
+        </div>
+        <div class="flex flex-col items-center mb-4">
+          <div class="relative w-full h-3 bg-gray-800 rounded-full overflow-hidden mb-2">
+            <div id="breadth-score-bar" class="absolute inset-y-0 left-0 rounded-full transition-all duration-700 bg-gray-600" style="width:50%"></div>
+            <div class="absolute inset-y-0 bg-red-500/60" style="left:40%;width:1px"></div>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="breadth-score" class="text-3xl font-bold font-mono text-white">—</span>
+            <span class="text-xs text-gray-500">score</span>
+            <span id="breadth-block-badge" class="hidden ml-2 text-[10px] px-2 py-0.5 rounded font-bold bg-red-500/20 text-red-400 border border-red-500/30">🚫 BLOQUEADO</span>
+          </div>
+          <p class="text-[9px] text-gray-600 mt-0.5">linha vermelha = limite de bloqueio (40%)</p>
+        </div>
+        <div class="flex flex-col gap-2 flex-1">
+          <div class="bg-gray-800/60 rounded-lg px-3 py-2.5">
+            <div class="flex items-center justify-between mb-1.5">
+              <div><span class="text-[10px] text-gray-400 font-semibold">Pairs &gt; EMA50</span><span class="text-[9px] text-gray-600 ml-1.5">35%</span></div>
+              <div><span id="breadth-alts-ema50" class="text-sm font-bold text-white">—</span><span id="breadth-alts-context" class="text-[9px] text-gray-500 ml-1">—</span></div>
+            </div>
+            <div class="h-1 bg-gray-700 rounded-full overflow-hidden"><div id="breadth-alts-bar" class="h-full rounded-full bg-gray-600 transition-all duration-500" style="width:50%"></div></div>
+          </div>
+          <div class="bg-gray-800/60 rounded-lg px-3 py-2.5">
+            <div class="flex items-center justify-between mb-1.5">
+              <div><span class="text-[10px] text-gray-400 font-semibold">BTC Dominância</span><span class="text-[9px] text-gray-600 ml-1.5">25%</span></div>
+              <div><span id="breadth-btc-dom" class="text-sm font-bold text-white">—</span><span id="breadth-dom-context" class="text-[9px] text-gray-500 ml-1">—</span></div>
+            </div>
+            <div class="h-1 bg-gray-700 rounded-full overflow-hidden"><div id="breadth-dom-bar" class="h-full rounded-full bg-gray-600 transition-all duration-500" style="width:50%"></div></div>
+          </div>
+          <div class="bg-gray-800/60 rounded-lg px-3 py-2.5">
+            <div class="flex items-center justify-between mb-1.5">
+              <div><span class="text-[10px] text-gray-400 font-semibold">Funding Rate BTC</span><span class="text-[9px] text-gray-600 ml-1.5">25%</span></div>
+              <div><span id="breadth-funding" class="text-sm font-bold text-white">—</span><span id="breadth-fund-context" class="text-[9px] text-gray-500 ml-1">—</span></div>
+            </div>
+            <div class="h-1 bg-gray-700 rounded-full overflow-hidden"><div id="breadth-fund-bar" class="h-full rounded-full bg-gray-600 transition-all duration-500" style="width:50%"></div></div>
+          </div>
+          <div class="bg-gray-800/60 rounded-lg px-3 py-2.5">
+            <div class="flex items-center justify-between mb-1.5">
+              <div><span class="text-[10px] text-gray-400 font-semibold">OI Expansion</span><span class="text-[9px] text-gray-600 ml-1.5">15%</span></div>
+              <div><span id="breadth-oi" class="text-sm font-bold text-white">—</span><span id="breadth-oi-context" class="text-[9px] text-gray-500 ml-1">—</span></div>
+            </div>
+            <div class="h-1 bg-gray-700 rounded-full overflow-hidden"><div id="breadth-oi-bar" class="h-full rounded-full bg-gray-600 transition-all duration-500" style="width:50%"></div></div>
+          </div>
+        </div>
+        <div class="mt-3 pt-2.5 border-t border-gray-800/60 flex justify-between text-[9px] text-gray-600">
+          <span><span class="text-green-500">≥40%</span> compras liberadas</span>
+          <span><span class="text-red-500">&lt;40%</span> compras bloqueadas</span>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Gráfico de Candles ── -->
     <div class="card p-5">
       <div class="mb-4">
@@ -430,8 +486,8 @@
       </div>
     </div>
 
-    <!-- ── Histórico de Trades · Feed de Sinais · Market Breadth ── -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- ── Histórico de Trades · Feed de Sinais ── -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
       <!-- Histórico de Trades -->
       <div class="card p-5 flex flex-col">
@@ -465,110 +521,6 @@
         </div>
         <div id="feed-list" class="space-y-1.5 flex-1 overflow-y-auto pr-1" style="max-height:380px">
           <p class="text-gray-500 text-sm text-center py-8">Aguardando sinais...</p>
-        </div>
-      </div>
-
-      <!-- Market Breadth — vertical -->
-      <div class="card p-5 flex flex-col">
-
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="font-semibold text-white">Market Breadth</h3>
-          <span id="breadth-label" class="text-xs font-bold px-2.5 py-1 rounded bg-gray-700 text-gray-300">N/A</span>
-        </div>
-
-        <!-- Score gauge centralizado -->
-        <div class="flex flex-col items-center mb-4">
-          <div class="relative w-full h-3 bg-gray-800 rounded-full overflow-hidden mb-2">
-            <div id="breadth-score-bar" class="absolute inset-y-0 left-0 rounded-full transition-all duration-700 bg-gray-600" style="width:50%"></div>
-            <!-- threshold marker 40% -->
-            <div class="absolute inset-y-0 bg-red-500/60" style="left:40%;width:1px"></div>
-          </div>
-          <div class="flex items-baseline gap-1.5">
-            <span id="breadth-score" class="text-3xl font-bold font-mono text-white">—</span>
-            <span class="text-xs text-gray-500">score</span>
-            <span id="breadth-block-badge" class="hidden ml-2 text-[10px] px-2 py-0.5 rounded font-bold bg-red-500/20 text-red-400 border border-red-500/30">🚫 BLOQUEADO</span>
-          </div>
-          <p class="text-[9px] text-gray-600 mt-0.5">linha vermelha = limite de bloqueio (40%)</p>
-        </div>
-
-        <!-- 4 métricas com barra de contribuição -->
-        <div class="flex flex-col gap-2 flex-1">
-
-          <!-- Pairs > EMA50 — peso 35% -->
-          <div class="bg-gray-800/60 rounded-lg px-3 py-2.5">
-            <div class="flex items-center justify-between mb-1.5">
-              <div>
-                <span class="text-[10px] text-gray-400 font-semibold">Pairs &gt; EMA50</span>
-                <span class="text-[9px] text-gray-600 ml-1.5">35% do score</span>
-              </div>
-              <div class="text-right">
-                <span id="breadth-alts-ema50" class="text-sm font-bold text-white">—</span>
-                <span id="breadth-alts-context" class="text-[9px] text-gray-500 ml-1">—</span>
-              </div>
-            </div>
-            <div class="h-1 bg-gray-700 rounded-full overflow-hidden">
-              <div id="breadth-alts-bar" class="h-full rounded-full bg-gray-600 transition-all duration-500" style="width:50%"></div>
-            </div>
-          </div>
-
-          <!-- BTC Dominance — peso 25% -->
-          <div class="bg-gray-800/60 rounded-lg px-3 py-2.5">
-            <div class="flex items-center justify-between mb-1.5">
-              <div>
-                <span class="text-[10px] text-gray-400 font-semibold">BTC Dominância</span>
-                <span class="text-[9px] text-gray-600 ml-1.5">25% do score</span>
-              </div>
-              <div class="text-right">
-                <span id="breadth-btc-dom" class="text-sm font-bold text-white">—</span>
-                <span id="breadth-dom-context" class="text-[9px] text-gray-500 ml-1">—</span>
-              </div>
-            </div>
-            <div class="h-1 bg-gray-700 rounded-full overflow-hidden">
-              <div id="breadth-dom-bar" class="h-full rounded-full bg-gray-600 transition-all duration-500" style="width:50%"></div>
-            </div>
-          </div>
-
-          <!-- Funding Rate — peso 25% -->
-          <div class="bg-gray-800/60 rounded-lg px-3 py-2.5">
-            <div class="flex items-center justify-between mb-1.5">
-              <div>
-                <span class="text-[10px] text-gray-400 font-semibold">Funding Rate BTC</span>
-                <span class="text-[9px] text-gray-600 ml-1.5">25% do score</span>
-              </div>
-              <div class="text-right">
-                <span id="breadth-funding" class="text-sm font-bold text-white">—</span>
-                <span id="breadth-fund-context" class="text-[9px] text-gray-500 ml-1">—</span>
-              </div>
-            </div>
-            <div class="h-1 bg-gray-700 rounded-full overflow-hidden">
-              <div id="breadth-fund-bar" class="h-full rounded-full bg-gray-600 transition-all duration-500" style="width:50%"></div>
-            </div>
-          </div>
-
-          <!-- OI Expansion — peso 15% -->
-          <div class="bg-gray-800/60 rounded-lg px-3 py-2.5">
-            <div class="flex items-center justify-between mb-1.5">
-              <div>
-                <span class="text-[10px] text-gray-400 font-semibold">OI Expansion</span>
-                <span class="text-[9px] text-gray-600 ml-1.5">15% do score</span>
-              </div>
-              <div class="text-right">
-                <span id="breadth-oi" class="text-sm font-bold text-white">—</span>
-                <span id="breadth-oi-context" class="text-[9px] text-gray-500 ml-1">—</span>
-              </div>
-            </div>
-            <div class="h-1 bg-gray-700 rounded-full overflow-hidden">
-              <div id="breadth-oi-bar" class="h-full rounded-full bg-gray-600 transition-all duration-500" style="width:50%"></div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Legenda -->
-        <div class="mt-3 pt-2.5 border-t border-gray-800/60 flex justify-between text-[9px] text-gray-600">
-          <span><span class="text-green-500">≥40%</span> compras liberadas</span>
-          <span><span class="text-red-500">&lt;40%</span> compras bloqueadas</span>
         </div>
       </div>
 
