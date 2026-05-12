@@ -36,6 +36,13 @@ from datetime import datetime
 
 from paper_trading.engine import PaperTradingEngine
 
+# Import opcional — só usado se OKXTradingClient estiver disponível
+try:
+    from exchange.okx_trading import OKXTradingClient, InstrumentCache
+    _HAS_TRADING_CLIENT = True
+except ImportError:
+    _HAS_TRADING_CLIENT = False
+
 
 # ── Taxas OKX (conta regular, sem tier de volume) ────────────────────────────
 MAKER_FEE = 0.001   # 0.10%
@@ -165,10 +172,14 @@ class SimulatedExecutionEngine(PaperTradingEngine):
         default_order_mode: str = "adaptive",
         default_spread_pct: float = 0.0002,
         seed: Optional[int] = None,
+        trading_client=None,   # OKXTradingClient — fornece precisão real de instrumentos
     ):
         super().__init__(initial_balance_usd)
-        self.default_order_mode  = default_order_mode   # 'market' | 'limit' | 'adaptive'
+        self.default_order_mode  = default_order_mode
         self.default_spread_pct  = default_spread_pct
+        # Cliente de trading real — usado apenas para ler dados de precisão de instrumento
+        # Nenhuma ordem real é enviada; o bot continua em paper trading
+        self._trading_client = trading_client
         self.pending_orders: list[PendingOrder] = []
         self._order_counter      = 0
         self._exec_stats = {
@@ -192,15 +203,39 @@ class SimulatedExecutionEngine(PaperTradingEngine):
         return SYMBOL_PARAMS.get(symbol, SYMBOL_PARAMS["DEFAULT"])
 
     def _round_qty(self, symbol: str, qty: float) -> float:
+        # Usa InstrumentCache do OKXTradingClient se disponível (lotSz real da OKX)
+        if self._trading_client is not None and _HAS_TRADING_CLIENT:
+            try:
+                inst_id = symbol if "-USDT" in symbol else symbol + "T"  # BTC-USD → BTC-USDT
+                self._trading_client._ensure_instrument(inst_id)
+                return self._trading_client._instruments.round_qty(inst_id, qty)
+            except Exception:
+                pass
         decimals = self._sym_params(symbol)["qty_decimals"]
         factor   = 10 ** decimals
-        return math.floor(qty * factor) / factor  # floor, nunca arredonda pra cima
+        return math.floor(qty * factor) / factor
 
     def _round_price(self, symbol: str, price: float) -> float:
+        if self._trading_client is not None and _HAS_TRADING_CLIENT:
+            try:
+                inst_id = symbol if "-USDT" in symbol else symbol + "T"
+                self._trading_client._ensure_instrument(inst_id)
+                return self._trading_client._instruments.round_price(inst_id, price)
+            except Exception:
+                pass
         decimals = self._sym_params(symbol)["price_decimals"]
         return round(price, decimals)
 
     def _check_min_notional(self, symbol: str, usd_amount: float) -> bool:
+        if self._trading_client is not None and _HAS_TRADING_CLIENT:
+            try:
+                inst_id = symbol if "-USDT" in symbol else symbol + "T"
+                self._trading_client._ensure_instrument(inst_id)
+                min_sz  = self._trading_client._instruments.min_size(inst_id)
+                # min_sz é em unidade base (BTC); converte para USD via usd_amount/qty
+                # Usamos min_usd hardcoded como fallback conservador
+            except Exception:
+                pass
         return usd_amount >= self._sym_params(symbol)["min_usd"]
 
     def _next_order_id(self) -> str:

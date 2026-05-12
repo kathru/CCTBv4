@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 from exchange.okx     import OKXClient
 from paper_trading.engine           import PaperTradingEngine, TAKER_FEE
 from paper_trading.simulated_engine import SimulatedExecutionEngine
+from exchange.okx_trading           import OKXTradingClient
 from strategies.news_guard             import is_news_blackout, next_event
 from strategies.market_breadth         import get_market_breadth, MarketBreadthSnapshot
 from strategies.market_regime          import calc_adx, calc_atr
@@ -248,20 +249,34 @@ FG_GREED_MIN   = 70   # Acima de 70: bloqueia novas entradas (euforia = risco de
 FG_TTL         = 3600 # cache de 1 hora (índice atualiza 1×/dia)
 
 
-client = OKXClient(
-    api_key    = os.getenv("OKX_API_KEY",    os.getenv("API_KEY", "")),
-    secret_key = os.getenv("OKX_SECRET_KEY", os.getenv("SECRET_KEY", "")),
-    passphrase = os.getenv("OKX_PASSPHRASE", ""),
-)
+_okx_key  = os.getenv("OKX_API_KEY",    os.getenv("API_KEY", ""))
+_okx_sec  = os.getenv("OKX_SECRET_KEY", os.getenv("SECRET_KEY", ""))
+_okx_pass = os.getenv("OKX_PASSPHRASE", "")
+
+client = OKXClient(api_key=_okx_key, secret_key=_okx_sec, passphrase=_okx_pass)
+
+# OKXTradingClient: usado apenas para ler precisão real de instrumentos (tickSz/lotSz/minSz).
+# Nenhuma ordem real é enviada — o bot continua em paper trading.
+_trading_client = None
+if _okx_key and _okx_sec and _okx_pass:
+    try:
+        _trading_client = OKXTradingClient(_okx_key, _okx_sec, _okx_pass)
+        logger.info("[STARTUP] OKXTradingClient iniciado — precisão real de instrumentos ativa")
+    except Exception as _e:
+        logger.warning(f"[STARTUP] OKXTradingClient não iniciado: {_e}")
+
 # Converte capital inicial de BRL para USD na taxa atual de mercado.
-# O motor opera sempre em USD; o dashboard converte para BRL apenas na exibição.
 _startup_usd_brl = _fetch_usd_brl()
 _initial_usd     = round(TOTAL_BRL_INITIAL / _startup_usd_brl, 2)
 engine = SimulatedExecutionEngine(
     initial_balance_usd=_initial_usd,
-    default_order_mode="adaptive",  # 'market' | 'limit' | 'adaptive'
-    default_spread_pct=0.0002,      # 2 bps default spread (OKX BTC ~1-3 bps)
+    default_order_mode="adaptive",
+    default_spread_pct=0.0002,
+    trading_client=_trading_client,   # injeta precisão real de instrumentos OKX
 )
+
+# Cache de spreads reais por par (bid/ask do último ticker)
+_last_spreads: dict[str, float] = {p: 0.0002 for p in ["BTC-USD", "ETH-USD", "SOL-USD"]}
 
 # ── V4 Orchestrator — pipeline probabilística completa ────────────
 v4 = V4Orchestrator(state_dir=os.path.join(os.path.dirname(os.path.dirname(__file__)), "data"))
@@ -1000,10 +1015,20 @@ async def trading_loop():
 
                 _last_prices[pair] = price
                 engine.update_price(symbol, price)
+
+                # Spread real bid/ask — alimenta SimulatedExecutionEngine
+                _bid = float(ticker.get("bid", 0) or 0)
+                _ask = float(ticker.get("ask", 0) or 0)
+                if _bid > 0 and _ask > 0 and _ask > _bid:
+                    _last_spreads[pair] = (_ask - _bid) / price
+                else:
+                    _last_spreads[pair] = 0.0002   # fallback 2 bps
+
                 state["prices"][pair] = {
                     "price":          price,
                     "price_pct_chg":  float(ticker.get("price_percentage_change_24h", 0)),
                     "volume_24h":     float(ticker.get("volume_24h", 0)),
+                    "spread_pct":     round(_last_spreads[pair] * 100, 4),
                 }
 
                 # Fetch candles com timeout (evita bloquear se API está lenta)
@@ -1093,6 +1118,12 @@ async def trading_loop():
                     })
                     state["feed"] = state["feed"][:100]
 
+                # ── Parâmetros de execução realista (compartilhados BUY/SELL) ──
+                _v4_atr_pct = (state.get("v4", {}).get(pair, {})
+                               .get("signal", {}).get("factors", {})
+                               .get("atr_pct", 0.015))
+                _v4_spread  = _last_spreads.get(pair, 0.0002)
+
                 # ── V4 BUY execution ──────────────────────────────────────────
                 _today = datetime.now().strftime("%Y-%m-%d")
                 _v4_key = f"V4:{pair}"
@@ -1112,7 +1143,14 @@ async def trading_loop():
                     _v4_sl = _v4_decision.get("execution") and _v4_decision["execution"].stop_loss or 0
                     if _v4_size_usd > 10 and price > 0:
                         _v4_qty = _v4_size_usd / price
-                        if engine.buy(symbol, _v4_size_usd, price, "V4:signal"):
+                        _v4_atr_pct = (state.get("v4", {}).get(pair, {})
+                                       .get("signal", {}).get("factors", {})
+                                       .get("atr_pct", 0.015))
+                        if engine.buy(
+                            symbol, _v4_size_usd, price, "V4:signal",
+                            atr_pct=_v4_atr_pct, spread_pct=_v4_spread,
+                            score=_v4_score, regime=_v4_regime,
+                        ):
                             _sl_pct = abs(price - _v4_sl) / price if _v4_sl and price else 0.03
                             strategy_slots[_v4_key] = {
                                 "qty":       _v4_qty,
@@ -1136,7 +1174,11 @@ async def trading_loop():
                     _v4_sell_usd = _v4_qty * price
                     _v4_entry = _v4_slot.get("entry", price)
                     _v4_pnl   = (_v4_sell_usd - _v4_slot.get("entry_usd", _v4_sell_usd)) * (1 - TAKER_FEE)
-                    if engine.sell(symbol, _v4_qty, price, "V4:signal"):
+                    if engine.sell(
+                        symbol, _v4_qty, price, "V4:signal",
+                        atr_pct=_v4_atr_pct, spread_pct=_v4_spread,
+                        score=_v4_score, regime=_v4_regime,
+                    ):
                         strategy_slots[_v4_key] = _empty_slot()
                         _record_trade("SELL", pair, _v4_qty, price, _v4_sell_usd, "V4:signal")
                         logger.info(f"[V4][{pair}] ✅ SELL ${_v4_sell_usd:.2f} @ ${price:,.2f} | pnl={_v4_pnl:.2f}")
