@@ -180,13 +180,20 @@
       <!-- V4 Engine Panel -->
       <div class="mb-4 rounded-xl border border-indigo-500/20 bg-gray-900/70 overflow-hidden">
 
-        <!-- Header -->
-        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-800">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-indigo-400 pulse-dot"></span>
-            <span class="text-sm font-bold text-indigo-400 tracking-wide">V4 — Motor Probabilístico</span>
+        <!-- Win Rate destaque — estilo Market Breadth -->
+        <div class="flex flex-col items-center px-4 pt-4 pb-3 border-b border-gray-800">
+          <div class="relative w-full h-3 bg-gray-800 rounded-full overflow-hidden mb-2">
+            <div id="v4-winrate-gauge" class="absolute inset-y-0 left-0 rounded-full transition-all duration-700 bg-gray-600" style="width:0%"></div>
+            <div class="absolute inset-y-0 bg-yellow-500/60" style="left:55%;width:1px"></div>
           </div>
-          <span id="v4-risk-action" class="text-xs font-bold px-3 py-1 rounded-full bg-gray-700 text-gray-300">normal</span>
+          <div class="flex items-center gap-2">
+            <div class="flex items-baseline gap-1.5">
+              <span id="v4-winrate-big" class="text-3xl font-bold font-mono text-white">—</span>
+              <span class="text-xs text-gray-500">win rate 7d</span>
+            </div>
+            <span id="v4-risk-action" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-gray-700 text-gray-300 ml-2">normal</span>
+          </div>
+          <p class="text-[9px] text-gray-600 mt-0.5">linha amarela = meta (55%)</p>
         </div>
 
         <!-- Sizing row -->
@@ -1354,9 +1361,13 @@
     { const v = v4r.winrate_7d;
       const pct = v != null ? v * 100 : 0;
       const c = pct < 45 ? '#f87171' : pct < 55 ? '#fb923c' : '#4ade80';
-      setVal('v4-winrate', v != null ? pct.toFixed(0)+'%' : '—', c);
+      const ctx = pct < 45 ? 'abaixo do esperado' : pct < 55 ? 'neutro' : pct < 65 ? 'saudável' : 'forte';
+      setVal('v4-winrate',     v != null ? pct.toFixed(0)+'%' : '—', c);
       setBar('v4-winrate-bar', pct, c);
-      setCtx('v4-winrate-ctx', pct < 45 ? 'abaixo do esperado' : pct < 55 ? 'neutro' : pct < 65 ? 'saudável' : 'forte');
+      setCtx('v4-winrate-ctx', ctx);
+      // destaque topo (gauge + número grande)
+      setVal('v4-winrate-big', v != null ? pct.toFixed(0)+'%' : '—', c);
+      setBar('v4-winrate-gauge', pct, c);
     }
 
     // V4 per-pair scores
