@@ -187,7 +187,7 @@
               </div>
             </div>
             <div class="h-1 bg-gray-700 rounded-full overflow-hidden">
-              <div id="v4-var-bar" class="h-full rounded-full bg-green-500 transition-all duration-500" style="width:0%"></div>
+              <div id="v4-var-bar" class="h-full rounded-full transition-all duration-500" style="width:0%"></div>
             </div>
           </div>
 
@@ -204,7 +204,7 @@
               </div>
             </div>
             <div class="h-1 bg-gray-700 rounded-full overflow-hidden">
-              <div id="v4-ruin-bar" class="h-full rounded-full bg-green-500 transition-all duration-500" style="width:0%"></div>
+              <div id="v4-ruin-bar" class="h-full rounded-full transition-all duration-500" style="width:0%"></div>
             </div>
           </div>
 
@@ -221,7 +221,7 @@
               </div>
             </div>
             <div class="h-1 bg-gray-700 rounded-full overflow-hidden">
-              <div id="v4-sharpe-bar" class="h-full rounded-full bg-gray-600 transition-all duration-500" style="width:0%"></div>
+              <div id="v4-sharpe-bar" class="h-full rounded-full transition-all duration-500" style="width:0%"></div>
             </div>
           </div>
 
@@ -238,7 +238,7 @@
               </div>
             </div>
             <div class="h-1 bg-gray-700 rounded-full overflow-hidden">
-              <div id="v4-winrate-bar" class="h-full rounded-full bg-gray-600 transition-all duration-500" style="width:0%"></div>
+              <div id="v4-winrate-bar" class="h-full rounded-full transition-all duration-500" style="width:0%"></div>
             </div>
           </div>
 
@@ -1183,7 +1183,7 @@
     }
 
     // Risk metrics
-    const setBar = (id, pct, color) => { const el = document.getElementById(id); if (el) { el.style.width = Math.min(100, Math.max(0, pct)) + '%'; el.style.background = color; } };
+    const setBar = (id, pct, color) => { const el = document.getElementById(id); if (el) { el.style.width = Math.min(100, Math.max(3, pct)) + '%'; el.style.background = color; } };
     const setCtx = (id, txt)       => { const el = document.getElementById(id); if (el) el.textContent = txt; };
     const setVal = (id, txt, color)=> { const el = document.getElementById(id); if (el) { el.textContent = txt; el.style.color = color; } };
 
