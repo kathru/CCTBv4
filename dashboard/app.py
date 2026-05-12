@@ -15,7 +15,8 @@ from fastapi.responses import HTMLResponse, FileResponse
 from dotenv import load_dotenv
 
 from exchange.okx     import OKXClient
-from paper_trading.engine import PaperTradingEngine, TAKER_FEE
+from paper_trading.engine           import PaperTradingEngine, TAKER_FEE
+from paper_trading.simulated_engine import SimulatedExecutionEngine
 from strategies.news_guard             import is_news_blackout, next_event
 from strategies.market_breadth         import get_market_breadth, MarketBreadthSnapshot
 from strategies.market_regime          import calc_adx, calc_atr
@@ -256,7 +257,11 @@ client = OKXClient(
 # O motor opera sempre em USD; o dashboard converte para BRL apenas na exibição.
 _startup_usd_brl = _fetch_usd_brl()
 _initial_usd     = round(TOTAL_BRL_INITIAL / _startup_usd_brl, 2)
-engine = PaperTradingEngine(initial_balance_usd=_initial_usd)
+engine = SimulatedExecutionEngine(
+    initial_balance_usd=_initial_usd,
+    default_order_mode="adaptive",  # 'market' | 'limit' | 'adaptive'
+    default_spread_pct=0.0002,      # 2 bps default spread (OKX BTC ~1-3 bps)
+)
 
 # ── V4 Orchestrator — pipeline probabilística completa ────────────
 v4 = V4Orchestrator(state_dir=os.path.join(os.path.dirname(os.path.dirname(__file__)), "data"))
@@ -618,6 +623,8 @@ state = {
     "fee_vol_30d":      0.0,
     "news_blackout":    False,
     "news_reason":      "",
+    "exec_stats":       {},
+    "pending_orders":   [],
     "next_news_event":  None,
     "market_breadth":   {
         "alts_above_ema50_pct": None, "btc_dominance": None,
@@ -1248,6 +1255,15 @@ async def trading_loop():
         _next_sp = _seconds_to_next_sp_hour()
         state["next_cycle_ts"]    = int(time.time() + _next_sp)
         state["cycle_interval"]   = CYCLE_INTERVAL   # mantido para compatibilidade JS
+
+        # Processa ordens limit pendentes contra preços atuais
+        if hasattr(engine, "tick"):
+            _tick_prices = {p: state["prices"][p]["price"] for p in PAIRS if state["prices"].get(p, {}).get("price")}
+            _tick_events = engine.tick(_tick_prices)
+            if _tick_events:
+                logger.info(f"[SIM] tick: {len(_tick_events)} evento(s) — {_tick_events}")
+            state["exec_stats"]   = engine.execution_stats() if hasattr(engine, "execution_stats") else {}
+            state["pending_orders"] = engine.pending_summary() if hasattr(engine, "pending_summary") else []
 
         await broadcast(state)
 
