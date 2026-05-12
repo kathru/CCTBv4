@@ -234,37 +234,54 @@
       </div>
       <!-- Bear Signals — visível apenas quando há sinais ativos -->
       <div id="bear-signals-row" class="hidden mb-3 flex flex-wrap gap-1.5"></div>
-      <!-- Regras de operação V4 -->
-      <div class="text-[10px] text-gray-500 mb-3 flex flex-wrap gap-x-4 gap-y-1">
-        <span>Sizing: <span class="text-indigo-400 font-semibold">Edge×Conf / Vol×Corr</span></span>
-        <span>Kelly: <span class="text-yellow-400 font-semibold">25% parcial</span></span>
-        <span>Max Slots: <span class="text-orange-400 font-semibold">4</span></span>
-        <span>SL: <span class="text-purple-400 font-semibold">ATR×regime</span></span>
-        <span>TP: <span class="text-green-400 font-semibold">escalonado 1.5/2/3×</span></span>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-xs">
+      <!-- Regras + tabela -->
+      <div class="rounded-xl border border-gray-800 overflow-hidden">
+
+        <!-- Pills de parâmetros -->
+        <div class="flex flex-wrap gap-2 px-4 py-3 bg-gray-800/40 border-b border-gray-800">
+          <span class="flex items-center gap-1.5 text-xs text-gray-400">
+            Sizing <span class="font-semibold text-indigo-400">Edge×Conf / Vol×Corr</span>
+          </span>
+          <span class="text-gray-700">·</span>
+          <span class="flex items-center gap-1.5 text-xs text-gray-400">
+            Kelly <span class="font-semibold text-yellow-400">25% parcial</span>
+          </span>
+          <span class="text-gray-700">·</span>
+          <span class="flex items-center gap-1.5 text-xs text-gray-400">
+            SL <span class="font-semibold text-purple-400">ATR×regime</span>
+          </span>
+          <span class="text-gray-700">·</span>
+          <span class="flex items-center gap-1.5 text-xs text-gray-400">
+            TP <span class="font-semibold text-green-400">escalonado 1.5/2/3×</span>
+          </span>
+        </div>
+
+        <!-- Tabela -->
+        <table class="w-full">
           <thead>
-            <tr class="text-gray-500 uppercase tracking-wider text-[10px] border-b border-gray-800">
-              <th class="text-left pb-2 pr-4">Par</th>
-              <th class="text-center pb-2 pr-4">Regime V4</th>
-              <th class="text-center pb-2 pr-4">Score Prob.</th>
-              <th class="text-center pb-2 pr-4">ATR Stop</th>
-              <th class="text-center pb-2 pr-4">Trades Hoje</th>
-              <th class="text-center pb-2">Posições</th>
+            <tr class="border-b border-gray-800">
+              <th class="text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Par</th>
+              <th class="text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Regime V4</th>
+              <th class="text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Score</th>
+              <th class="text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">ATR Stop</th>
+              <th class="text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Trades</th>
+              <th class="text-center text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">Posições</th>
             </tr>
           </thead>
           <tbody id="filters-table-body">
             <!-- populated by JS -->
           </tbody>
         </table>
-      </div>
-      <!-- Legenda de Score V4 -->
-      <div class="mt-3 flex flex-wrap gap-2 text-[10px]">
-        <span class="score-blocked px-2 py-0.5 rounded font-bold">&lt;55% HOLD</span>
-        <span class="score-reduced px-2 py-0.5 rounded font-bold">55-65% REDUZIDO</span>
-        <span class="score-normal px-2 py-0.5 rounded font-bold">65-75% NORMAL</span>
-        <span class="score-aggr px-2 py-0.5 rounded font-bold">75%+ AGRESSIVO</span>
+
+        <!-- Legenda de Score -->
+        <div class="flex items-center gap-3 px-4 py-2.5 border-t border-gray-800 bg-gray-800/20">
+          <span class="text-[10px] text-gray-600">Score:</span>
+          <span class="score-blocked text-[10px] px-2.5 py-1 rounded font-semibold">&lt;55% HOLD</span>
+          <span class="score-reduced text-[10px] px-2.5 py-1 rounded font-semibold">55–65% REDUZIDO</span>
+          <span class="score-normal  text-[10px] px-2.5 py-1 rounded font-semibold">65–75% NORMAL</span>
+          <span class="score-aggr   text-[10px] px-2.5 py-1 rounded font-semibold">75%+ AGRESSIVO</span>
+        </div>
+
       </div>
       <!-- News Guard Banner -->
       <div id="news-guard-banner" class="hidden mt-3 rounded-lg px-4 py-2 flex items-center justify-between bg-orange-900/40 border border-orange-500/40">
@@ -1203,24 +1220,24 @@
         const posCls    = pairOpen > 0 ? 'text-green-400' : 'text-gray-600';
         const posLabel  = pairOpen > 0 ? `${pairOpen} aberta${pairOpen > 1 ? 's' : ''}` : 'nenhuma';
 
-        return `<tr class="border-t border-gray-800/60 hover:bg-gray-800/20 transition-colors">
-          <td class="py-2.5 pr-4">
-            <span class="font-bold text-white text-xs">${c.sym}</span>
-            <span class="text-gray-600 text-[10px] ml-1">${c.pair}</span>
+        return `<tr class="border-t border-gray-800/40 hover:bg-gray-800/30 transition-colors">
+          <td class="px-4 py-4">
+            <span class="font-bold text-white text-sm">${c.sym}</span>
+            <span class="text-gray-600 text-xs ml-1.5">${c.pair}</span>
           </td>
-          <td class="py-2.5 pr-4 text-center">
-            <span class="${rCls} text-[10px] font-bold px-2 py-0.5 rounded-full">${regimeLabel(regime)}</span>
+          <td class="px-4 py-4 text-center">
+            <span class="${rCls} text-xs font-bold px-3 py-1 rounded-full">${regimeLabel(regime)}</span>
           </td>
-          <td class="py-2.5 pr-4 text-center">${scoreCell}</td>
-          <td class="py-2.5 pr-4 text-center">
-            <span class="${atrCls} text-[10px] font-mono font-bold">${atrTxt}</span>
+          <td class="px-4 py-4 text-center">${scoreCell}</td>
+          <td class="px-4 py-4 text-center">
+            <span class="${atrCls} text-sm font-mono font-bold">${atrTxt}</span>
           </td>
-          <td class="py-2.5 pr-4 text-center">
-            <span class="${cbCls} text-[10px] font-mono font-bold">${tradesToday}</span>
-            <span class="text-gray-700 text-[9px]">/${maxTrades}</span>
+          <td class="px-4 py-4 text-center">
+            <span class="${cbCls} text-sm font-mono font-bold">${tradesToday}</span>
+            <span class="text-gray-600 text-xs">/${maxTrades}</span>
           </td>
-          <td class="py-2.5 text-center">
-            <span class="${posCls} text-[10px] font-semibold">${posLabel}</span>
+          <td class="px-4 py-4 text-center">
+            <span class="${posCls} text-sm font-semibold">${posLabel}</span>
           </td>
         </tr>`;
       }).join('');
