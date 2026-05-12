@@ -598,60 +598,65 @@
 
   // ─── Gera cards de cripto dinamicamente ─────────────────────────────────
   document.getElementById('crypto-grid').innerHTML = CRYPTOS.map(c => `
-    <div id="card-${c.sym}" class="card p-5">
-      <div class="flex items-start justify-between mb-3">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full ${c.bg} flex items-center justify-center text-xl">${c.icon}</div>
+    <div id="card-${c.sym}" class="card p-4">
+
+      <!-- Linha 1: ativo + preço -->
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-full ${c.bg} flex items-center justify-center text-lg">${c.icon}</div>
           <div>
-            <h2 class="font-bold text-white text-lg">${c.name}</h2>
-            <p class="text-xs text-gray-500">${c.pair}</p>
+            <h2 class="font-bold text-white text-base leading-none">${c.name}</h2>
+            <p class="text-[10px] text-gray-500 mt-0.5">${c.pair}</p>
           </div>
         </div>
         <div class="text-right">
-          <p id="price-${c.sym}" class="text-2xl font-bold text-white font-mono">—</p>
-          <p id="chg-${c.sym}" class="text-sm text-gray-400">—</p>
+          <p id="price-${c.sym}" class="text-xl font-bold text-white font-mono">—</p>
+          <p id="chg-${c.sym}" class="text-xs text-gray-400">—</p>
         </div>
       </div>
-      <!-- Regime badge -->
-      <div class="flex items-center justify-between mb-2">
-        <span class="text-xs text-gray-600 uppercase tracking-wider">Regime de Mercado</span>
-        <span id="regime-${c.sym}" class="regime-neutral text-[10px] font-bold px-2.5 py-0.5 rounded-full">—</span>
-      </div>
-      <div class="grid grid-cols-4 gap-1 mb-2">
-        ${STRATEGIES.map(s => `
-        <div id="slot-${c.sym}-${s.id}" class="signal-hold rounded-lg px-1 py-1.5 text-center text-[9px]">
-          <p class="opacity-60 mb-0.5">${s.icon} ${s.id}</p>
-          <p class="slot-signal text-[10px] font-bold">HOLD</p>
-          <p class="slot-pos text-gray-600 mt-0.5">sem posição</p>
-        </div>`).join('')}
-      </div>
-      <div id="holdings-${c.sym}" class="mt-1 text-xs text-gray-500 hidden">
-        Posição: <span id="qty-${c.sym}" class="${c.color} font-mono font-bold">0</span> ${c.sym}
-      </div>
-      <div id="sltp-${c.sym}" class="mt-2 hidden">
-        <div class="grid grid-cols-4 gap-1.5 text-xs">
-          <div class="bg-gray-800/60 rounded px-2 py-1.5 text-center">
-            <p class="text-gray-500 mb-0.5">Entrada</p>
-            <p id="entry-${c.sym}" class="text-white font-mono font-bold">—</p>
+
+      <!-- Linha 2: V4 decisão + score + regime (linha toda) -->
+      <div class="flex items-center gap-2 mb-2.5">
+        <span id="v4-dec-${c.sym}" class="signal-hold text-[10px] font-bold px-2.5 py-1 rounded shrink-0">HOLD</span>
+        <div class="flex-1 flex items-center gap-1.5 min-w-0 overflow-hidden">
+          <div class="flex-1 bg-gray-800/70 rounded-full h-1.5 overflow-hidden">
+            <div id="v4-score-bar-${c.sym}" class="h-full rounded-full bg-gray-600 transition-all duration-500" style="width:50%"></div>
           </div>
-          <div class="bg-red-500/10 border border-red-500/20 rounded px-2 py-1.5 text-center">
-            <p class="text-red-400 mb-0.5">SL</p>
+          <span id="v4-score-pct-${c.sym}" class="text-[10px] font-mono text-gray-400 shrink-0">—</span>
+        </div>
+        <span id="regime-${c.sym}" class="regime-neutral text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0">—</span>
+      </div>
+
+      <!-- Linha 3: EV + posição aberta -->
+      <div class="flex items-center justify-between text-[10px] mb-2">
+        <div class="flex items-center gap-2 text-gray-500">
+          <span>EV: <span id="v4-ev-${c.sym}" class="font-mono">—</span></span>
+          <span id="holdings-${c.sym}" class="hidden text-gray-400">
+            <span id="qty-${c.sym}" class="${c.color} font-mono font-bold">0</span> ${c.sym}
+          </span>
+        </div>
+        <span id="chg-entry-${c.sym}" class="font-mono font-bold text-gray-500">—</span>
+      </div>
+
+      <!-- Linha 4: SL / ATR SL / TP (só quando há posição aberta) -->
+      <div id="sltp-${c.sym}" class="hidden">
+        <div class="grid grid-cols-3 gap-1 text-[10px]">
+          <div class="bg-red-500/10 border border-red-500/20 rounded px-2 py-1 text-center">
+            <p class="text-red-400 text-[8px] mb-0.5">SL</p>
             <p id="sl-${c.sym}" class="text-red-300 font-mono font-bold">—</p>
           </div>
-          <div class="bg-orange-500/10 border border-orange-500/20 rounded px-2 py-1.5 text-center">
-            <p class="text-orange-400 mb-0.5">ATR SL</p>
+          <div class="bg-orange-500/10 border border-orange-500/20 rounded px-2 py-1 text-center">
+            <p class="text-orange-400 text-[8px] mb-0.5">ATR SL</p>
             <p id="atr-sl-${c.sym}" class="text-orange-300 font-mono font-bold">—</p>
           </div>
-          <div class="bg-green-500/10 border border-green-500/20 rounded px-2 py-1.5 text-center">
-            <p class="text-green-400 mb-0.5">TP</p>
+          <div class="bg-green-500/10 border border-green-500/20 rounded px-2 py-1 text-center">
+            <p class="text-green-400 text-[8px] mb-0.5">TP</p>
             <p id="tp-${c.sym}" class="text-green-300 font-mono font-bold">—</p>
           </div>
         </div>
-        <div class="mt-1 flex items-center justify-between text-xs px-1">
-          <span class="text-gray-500">Variação desde entrada</span>
-          <span id="chg-entry-${c.sym}" class="font-mono font-bold">—</span>
-        </div>
+        <div class="hidden"><p id="entry-${c.sym}">—</p></div>
       </div>
+
     </div>`).join('');
 
   // ─── Formatação ─────────────────────────────────────────────────────────
@@ -775,87 +780,82 @@
     const feeRateEl = document.getElementById('current-fee-rate');
     if (feeRateEl) feeRateEl.textContent = feeRate;
 
-    // ── Preços, sinais e regime dos cards de cripto ───────────────────────
+    // ── Cards de cripto — V4 ─────────────────────────────────────────────
     CRYPTOS.forEach(c => {
-      const price = (s.prices || {})[c.pair];
-      const sig   = (s.signals || {})[c.pair];
+      const price  = (s.prices  || {})[c.pair];
+      const sig    = (s.signals || {})[c.pair];
+      const v4d    = (s.v4      || {})[c.pair] || {};
+      const slots  = s.slots || {};
+      const v4slot = slots[`V4:${c.pair}`] || {};
 
+      // Preço
       if (price && price.price) {
         document.getElementById('price-' + c.sym).textContent = 'R$ ' + fmtBRL(price.price * usdBrl);
-        const chg = price.price_pct_chg || 0;
+        const chg   = price.price_pct_chg || 0;
         const chgEl = document.getElementById('chg-' + c.sym);
         chgEl.textContent = 'US$ ' + fmt(price.price) + ' · ' + (chg >= 0 ? '▲ +' : '▼ ') + chg.toFixed(2) + '%';
-        chgEl.className = 'text-sm ' + (chg >= 0 ? 'text-green-400' : 'text-red-400');
+        chgEl.className   = 'text-xs ' + (chg >= 0 ? 'text-green-400' : 'text-red-400');
       }
 
-      // Regime badge per pair — usa sig.regime do backend se disponível
+      // V4 decisão + score bar
+      const dec    = v4d.decision || 'HOLD';
+      const score  = v4d.score    != null ? v4d.score : null;
+      const ev     = v4d.ev       != null ? v4d.ev    : null;
+      const decEl  = document.getElementById('v4-dec-' + c.sym);
+      const barEl  = document.getElementById('v4-score-bar-' + c.sym);
+      const pctEl  = document.getElementById('v4-score-pct-' + c.sym);
+      const evEl   = document.getElementById('v4-ev-'  + c.sym);
+
+      if (decEl) {
+        decEl.textContent = dec;
+        decEl.className   = signalClass(dec) + ' text-[10px] font-bold px-2.5 py-1 rounded shrink-0';
+      }
+      if (barEl && score != null) {
+        const pct    = Math.round(score * 100);
+        const color  = score >= 0.75 ? '#4ade80' : score >= 0.65 ? '#60a5fa' : score >= 0.55 ? '#fb923c' : '#6b7280';
+        barEl.style.width      = pct + '%';
+        barEl.style.background = color;
+      }
+      if (pctEl) {
+        pctEl.textContent  = score != null ? Math.round(score * 100) + '%' : '—';
+        pctEl.style.color  = score == null ? '#6b7280' : score >= 0.65 ? '#4ade80' : score >= 0.55 ? '#fb923c' : '#6b7280';
+      }
+      if (evEl) {
+        evEl.textContent = ev != null ? (ev >= 0 ? '+' : '') + ev.toFixed(4) : '—';
+        evEl.style.color = ev == null ? '#6b7280' : ev > 0 ? '#4ade80' : '#f87171';
+      }
+
+      // Regime badge
       const regimeEl = document.getElementById('regime-' + c.sym);
       if (regimeEl) {
-        const regime = sig ? inferRegime(sig) : 'NEUTRAL';
-        regimeEl.textContent  = regime;
-        regimeEl.className    = regimeCls(regime) + ' text-[10px] font-bold px-2.5 py-0.5 rounded-full';
+        const regime = v4d.regime || (sig ? inferRegime(sig) : 'UNKNOWN');
+        regimeEl.textContent = regimeLabel(regime);
+        regimeEl.className   = regimeCls(regime) + ' text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0';
       }
 
-      if (sig) {
-        // Slot V4 por par
-        const slots  = s.slots || {};
-        const v4slot = slots[`V4:${c.pair}`] || {};
-        STRATEGIES.forEach(st => {
-          const el = document.getElementById(`slot-${c.sym}-${st.id}`);
-          if (!el) return;
-          const v4d    = (s.v4 || {})[c.pair] || {};
-          const sigVal = st.id === 'V4' ? (v4d.decision || 'HOLD') : 'HOLD';
-          const slot   = st.id === 'V4' ? v4slot : {};
-          const ps     = el.querySelectorAll('p');
-          el.className = signalClass(sigVal) + ' rounded-lg px-1 py-1.5 text-center text-[9px]';
-          if (ps[1]) ps[1].textContent = sigVal;
-          if (ps[2]) {
-            if (st.id === 'V4' && (slot.qty || 0) > 0 && price && slot.entry) {
-              const chg2 = (price.price - slot.entry) / slot.entry * 100;
-              ps[2].textContent = `● ${chg2 >= 0 ? '+' : ''}${chg2.toFixed(1)}%`;
-              ps[2].style.color = chg2 >= 0 ? '#4ade80' : '#f87171';
-            } else {
-              ps[2].textContent = 'sem posição';
-              ps[2].style.color = '#4b5563';
-            }
-          }
-        });
-
-        // SL / TP / ATR SL
-        const sltpEl = document.getElementById('sltp-' + c.sym);
-        if (sltpEl) {
-          if (sig.entry_price) {
-            sltpEl.classList.remove('hidden');
-            document.getElementById('entry-' + c.sym).textContent = 'R$ ' + fmtBRL(sig.entry_price * usdBrl);
-            document.getElementById('sl-' + c.sym).textContent    = 'R$ ' + fmtBRL((sig.sl_level || 0) * usdBrl);
-            document.getElementById('tp-' + c.sym).textContent    = 'R$ ' + fmtBRL((sig.tp_level || 0) * usdBrl);
-            // ATR-based stop loss: prefer sig.atr_sl_level, fallback to "—"
-            const atrSlEl = document.getElementById('atr-sl-' + c.sym);
-            if (atrSlEl) {
-              if (sig.atr_sl_level) {
-                atrSlEl.textContent = 'R$ ' + fmtBRL(sig.atr_sl_level * usdBrl);
-              } else {
-                atrSlEl.textContent = '—';
-              }
-            }
-            const chgEl2 = document.getElementById('chg-entry-' + c.sym);
-            if (chgEl2) {
-              const chgPct = sig.change_pct || 0;
-              chgEl2.textContent = (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%';
-              chgEl2.style.color = chgPct >= 0 ? '#4ade80' : '#f87171';
-            }
-          } else {
-            sltpEl.classList.add('hidden');
-          }
-        }
-      }
-
-      // Holdings
-      const qty = (_holdings[c.sym] || 0);
+      // Posição aberta — holdings + variação + SL/TP
+      const qty    = (_holdings[c.sym] || 0);
       const holdEl = document.getElementById('holdings-' + c.sym);
       const qtyEl  = document.getElementById('qty-' + c.sym);
       if (holdEl) holdEl.classList.toggle('hidden', qty <= 0);
       if (qtyEl && qty > 0) qtyEl.textContent = qty.toFixed(6);
+
+      const sltpEl = document.getElementById('sltp-' + c.sym);
+      if (sltpEl) {
+        const hasPos = qty > 0 && sig && sig.entry_price;
+        sltpEl.classList.toggle('hidden', !hasPos);
+        if (hasPos) {
+          document.getElementById('sl-'     + c.sym).textContent = sig.atr_sl_level ? 'R$ ' + fmtBRL(sig.atr_sl_level * usdBrl * 0.97) : '—';
+          document.getElementById('atr-sl-' + c.sym).textContent = sig.atr_sl_level ? 'R$ ' + fmtBRL(sig.atr_sl_level * usdBrl) : '—';
+          document.getElementById('tp-'     + c.sym).textContent = sig.atr_sl_pct   ? 'R$ ' + fmtBRL(sig.entry_price * (1 + sig.atr_sl_pct * 2 / 100) * usdBrl) : '—';
+          const chgEl2 = document.getElementById('chg-entry-' + c.sym);
+          if (chgEl2) {
+            const chgPct = sig.change_pct || 0;
+            chgEl2.textContent = (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%';
+            chgEl2.style.color = chgPct >= 0 ? '#4ade80' : '#f87171';
+          }
+        }
+      }
     });
 
     const allSlots = s.slots || {};
