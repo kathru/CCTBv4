@@ -235,9 +235,10 @@ def extract_features(candles: list, i: int) -> dict:
     atr_prev = calc_atr(highs[:-14], lows[:-14], closes[:-14], 14)
     atr_exp  = atr_val / atr_prev if atr_prev > 0 else 1.0
 
-    # Volume delta (proxy orderflow)
-    bv = sum(volumes[i] for i in range(-10, 0) if closes[i] >= (window[-10:][i-len(window)+10]["open"] if len(window)>=10 else closes[i]))
-    sv = sum(volumes[i] for i in range(-10, 0)) - bv
+    # Volume delta (proxy orderflow via candle direction)
+    recent = window[-10:]
+    bv = sum(c["volume"] for c in recent if c["close"] >= c["open"])
+    sv = sum(c["volume"] for c in recent if c["close"] <  c["open"])
     tv = bv + sv
     taker_imbal = (bv - sv) / tv if tv > 0 else 0.0
 
