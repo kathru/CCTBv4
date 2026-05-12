@@ -235,7 +235,7 @@ SL_COOLDOWN_CYCLES    = 3
 # ── Circuit breaker + controles de risco ─────────────────────────
 MAX_DAILY_TRADES      = 20
 MAX_OPEN_SLOTS        = 4
-BUY_COOLDOWN_SECONDS  = 7200
+BUY_COOLDOWN_SECONDS  = 3600   # 1h — alinhado com ciclos 15min (backtest: -4h → -2h)
 _daily_trade_count: dict = {}  # {"YYYY-MM-DD": count}
 last_buy_time:      dict = {}  # {f"{strat}:{pair}": timestamp}
 

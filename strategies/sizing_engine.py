@@ -25,7 +25,7 @@ import math
 # Limites de sizing
 MIN_SIZE_PCT = 0.02   # 2% mínimo por trade
 MAX_SIZE_PCT = 0.15   # 15% máximo por trade
-BASE_SIZE_PCT = 0.08  # 8% base antes dos ajustes
+BASE_SIZE_PCT = 0.10  # 10% base antes dos ajustes (backtest: sistema saudável, aumentar sizing)
 
 
 def compute_position_size(

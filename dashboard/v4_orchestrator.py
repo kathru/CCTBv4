@@ -254,11 +254,11 @@ class V4Orchestrator:
 
         # ── Decisão final ─────────────────────────────────────────────────────
         # Threshold mínimo: score > 0.55 e EV > custo de execução
-        min_score = 0.55
+        min_score = 0.52
         if regime == "TREND_EXPANSION":
-            min_score = 0.58
+            min_score = 0.55
         elif regime == "VOLATILITY_COMPRESSION":
-            min_score = 0.60
+            min_score = 0.57
 
         if signal["score"] < min_score:
             return {
