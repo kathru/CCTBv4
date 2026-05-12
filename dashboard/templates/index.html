@@ -304,7 +304,7 @@
         </div>
         <div class="text-right">
           <p class="text-2xl font-bold font-mono text-yellow-400"><span id="next-news-mins">—</span></p>
-          <p class="text-[10px] text-yellow-600">minutos</p>
+          <p class="text-[10px] text-yellow-600">hh:mm:ss</p>
         </div>
       </div>
 
@@ -1210,7 +1210,18 @@
     if (nextNewsRow && s.next_news_event) {
       nextNewsRow.classList.remove('hidden');
       if (nextNewsName) nextNewsName.textContent = s.next_news_event.name || '—';
-      if (nextNewsMins) nextNewsMins.textContent  = s.next_news_event.mins_to ?? '—';
+      if (nextNewsMins) {
+        const mins = s.next_news_event.mins_to;
+        if (mins != null && mins !== '—') {
+          const totalSec = Math.round(Number(mins) * 60);
+          const hh = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+          const mm = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+          const ss = String(totalSec % 60).padStart(2, '0');
+          nextNewsMins.textContent = `${hh}:${mm}:${ss}`;
+        } else {
+          nextNewsMins.textContent = '—';
+        }
+      }
     } else if (nextNewsRow) {
       nextNewsRow.classList.add('hidden');
     }
