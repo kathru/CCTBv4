@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 from exchange.okx     import OKXClient
 from paper_trading.engine import PaperTradingEngine, TAKER_FEE
 from strategies.news_guard             import is_news_blackout, next_event
+from strategies.market_breadth         import get_market_breadth, MarketBreadthSnapshot
 from strategies.market_regime          import calc_adx, calc_atr
 from logger import setup_logger, log_cycle, log_trade, log_portfolio
 from notifier import notify_trade
@@ -921,7 +922,25 @@ async def trading_loop():
         except asyncio.TimeoutError:
             logger.warning("[Loop] Pre-fetch candles timeout — usando cache existente")
 
-        _breadth = None
+        # ── Market Breadth — circuit breaker para compras em momentos críticos ─
+        try:
+            _breadth_candles = {
+                p: _candle_cache.get(f"{p}:{CANDLE_1H}", {}).get("data", [])
+                for p in PAIRS
+            }
+            _breadth = await asyncio.wait_for(
+                loop.run_in_executor(None, get_market_breadth, _breadth_candles),
+                timeout=15.0
+            )
+        except Exception as _be:
+            logger.warning(f"[MarketBreadth] Erro: {_be}")
+            _breadth = None
+        state["market_breadth"] = _breadth.to_dict() if _breadth else {
+            "alts_above_ema50_pct": None, "btc_dominance": None,
+            "funding_rate_btc": None, "funding_rate_avg": None,
+            "oi_expansion_btc": None, "oi_expansion_avg": None,
+            "score": None, "label": "N/A", "size_multiplier": 1.0,
+        }
 
         # ── V4 Risk Engine — atualiza estado global antes do loop de pares ──
         try:
@@ -1052,8 +1071,13 @@ async def trading_loop():
                 # ── V4 BUY execution ──────────────────────────────────────────
                 _today = datetime.now().strftime("%Y-%m-%d")
                 _v4_key = f"V4:{pair}"
+                _breadth_score = (_breadth.score if _breadth else 1.0)
+                _breadth_block = _breadth_score < 0.40   # DANGER — bloqueia compras
+                if _breadth_block:
+                    logger.info(f"[MarketBreadth] BLOQUEIO de compra — score={_breadth_score:.2f} ({_breadth.label if _breadth else 'N/A'})")
                 if (
                     _v4_decision.get("decision") == "BUY"
+                    and not _breadth_block
                     and _v4_slot.get("qty", 0) == 0
                     and _daily_trade_count.get(_today, 0) < MAX_DAILY_TRADES
                     and sum(1 for s in strategy_slots.values() if s.get("qty", 0) > 0) < MAX_OPEN_SLOTS
