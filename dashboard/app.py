@@ -747,10 +747,8 @@ async def reset_portfolio(token: str = "", brl: float = 0.0):
     engine._save_state()
 
     # ── Todos os slots zerados — sem posições artificiais ────────
-    for s in all_strategies:
-        for pair in PAIRS:
-            strategy_slots[f"{s.name}:{pair}"] = _empty_slot()
     for pair in PAIRS:
+        strategy_slots[f"V4:{pair}"]     = _empty_slot()
         strategy_slots[f"manual:{pair}"] = _empty_slot()
     _save_slots(strategy_slots)
     state["slots"] = strategy_slots
