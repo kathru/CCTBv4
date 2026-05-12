@@ -111,7 +111,7 @@
   <main class="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
     <!-- ── Portfolio Summary ── -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-2">
       <div class="card px-4 py-3">
         <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Portfolio Total</p>
         <p id="portfolio-total" class="text-lg font-bold text-white leading-tight">R$ —</p>
@@ -154,6 +154,26 @@
           <span class="text-[10px] text-gray-600">/ <span id="open-positions-max" class="text-gray-600">4</span></span>
         </div>
         <div id="open-positions-pairs" class="text-[9px] text-gray-500 mt-0.5">nenhuma</div>
+      </div>
+
+      <!-- Circuit Breaker -->
+      <div class="card px-3 py-3">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Circuit Breaker</p>
+        <div class="flex items-baseline gap-1">
+          <p id="cb-count" class="text-lg font-bold text-white leading-tight">0</p>
+          <span class="text-[10px] text-gray-600">/<span id="cb-max">20</span></span>
+        </div>
+        <p class="text-[9px] text-gray-600 mt-0.5">trades hoje</p>
+      </div>
+
+      <!-- Slots -->
+      <div class="card px-3 py-3">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Slots</p>
+        <div class="flex items-baseline gap-1">
+          <p id="slots-count" class="text-lg font-bold text-white leading-tight">0</p>
+          <span class="text-[10px] text-gray-600">/<span id="slots-max">4</span></span>
+        </div>
+        <p class="text-[9px] text-gray-600 mt-0.5">posições abertas</p>
       </div>
 
       <!-- Fear & Greed — compacto -->
@@ -530,11 +550,7 @@
     <div class="card p-5">
       <div class="flex items-center justify-between mb-4">
         <h3 class="font-semibold text-white">KPIs em Tempo Real</h3>
-        <div class="flex items-center gap-3">
-          <span class="text-[10px] text-gray-600">Circuit Breaker: <span id="kpi-circuit-breaker" class="text-cyan-400 font-bold">—/10</span></span>
-          <span class="text-[10px] text-gray-600">Slots: <span id="kpi-open-slots" class="text-cyan-400 font-bold">—/4</span></span>
-          <span class="text-xs text-gray-500">atualizado a cada ciclo</span>
-        </div>
+        <span class="text-xs text-gray-500">atualizado a cada ciclo</span>
       </div>
 
       <!-- Overview global — 4 cards compactos -->
@@ -873,6 +889,16 @@
     const todayTrades = s.trades_today ?? 0;
     const maxTrades   = s.max_daily_trades ?? 20;
     const todayColor  = todayTrades >= maxTrades * 0.9 ? '#f87171' : todayTrades >= maxTrades * 0.6 ? '#fb923c' : '#d1d5db';
+    // Circuit Breaker box
+    { const cbEl = document.getElementById('cb-count'); const cbMax = document.getElementById('cb-max');
+      if (cbEl) { cbEl.textContent = todayTrades; cbEl.style.color = todayTrades >= maxTrades * 0.9 ? '#f87171' : todayTrades >= maxTrades * 0.6 ? '#fb923c' : '#e5e7eb'; }
+      if (cbMax) cbMax.textContent = maxTrades; }
+    // Slots box
+    { const openSl = s.open_slots_count ?? 0; const maxSl = s.max_open_slots ?? 4;
+      const slEl = document.getElementById('slots-count'); const slMax = document.getElementById('slots-max');
+      if (slEl) { slEl.textContent = openSl; slEl.style.color = openSl >= maxSl ? '#f87171' : openSl >= maxSl - 1 ? '#fb923c' : '#4ade80'; }
+      if (slMax) slMax.textContent = maxSl; }
+
     if (document.getElementById('trade-buys'))  document.getElementById('trade-buys').textContent  = totalBuys;
     if (document.getElementById('trade-sells')) document.getElementById('trade-sells').textContent = totalSells;
     if (document.getElementById('trade-today')) { document.getElementById('trade-today').textContent = todayTrades; document.getElementById('trade-today').style.color = todayColor; }
