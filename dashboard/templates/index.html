@@ -147,40 +147,6 @@
     <!-- ── Cards de Criptos ── -->
     <div id="crypto-grid" class="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
 
-    <!-- ── Market Breadth ── -->
-    <div class="card p-5">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="font-semibold text-white">Market Breadth</h3>
-        <span id="breadth-label" class="text-xs font-bold px-2 py-0.5 rounded bg-gray-700 text-gray-300">N/A</span>
-      </div>
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div class="bg-gray-800 rounded-lg p-3 flex flex-col items-center">
-          <span class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Pairs &gt; EMA50</span>
-          <span id="breadth-alts-ema50" class="text-lg font-bold text-white">—</span>
-        </div>
-        <div class="bg-gray-800 rounded-lg p-3 flex flex-col items-center">
-          <span class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">BTC Dom.</span>
-          <span id="breadth-btc-dom" class="text-lg font-bold text-white">—</span>
-        </div>
-        <div class="bg-gray-800 rounded-lg p-3 flex flex-col items-center">
-          <span class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Funding BTC</span>
-          <span id="breadth-funding" class="text-lg font-bold text-white">—</span>
-        </div>
-        <div class="bg-gray-800 rounded-lg p-3 flex flex-col items-center">
-          <span class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">OI Expansion</span>
-          <span id="breadth-oi" class="text-lg font-bold text-white">—</span>
-        </div>
-      </div>
-      <div class="mt-3 flex items-center gap-3 text-[10px] text-gray-500">
-        <span>Score: <span id="breadth-score" class="font-bold text-white">—</span></span>
-        <span id="breadth-block-badge" class="hidden px-2 py-0.5 rounded font-bold bg-red-500/20 text-red-400 border border-red-500/30">🚫 COMPRAS BLOQUEADAS</span>
-        <span class="ml-auto">
-          <span class="text-green-400 font-semibold">≥40% compras liberadas</span>
-          <span class="mx-1">·</span>
-          <span class="text-red-400 font-semibold">&lt;40% BLOQUEADO</span>
-        </span>
-      </div>
-    </div>
 
     <!-- ── Filtros Ativos por Par ── -->
     <div class="card p-5">
@@ -417,18 +383,22 @@
       </div>
     </div>
 
-    <!-- ── Histórico de Trades + Feed ── -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div class="card p-5">
+    <!-- ── Histórico de Trades · Feed de Sinais · Market Breadth ── -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+      <!-- Histórico de Trades -->
+      <div class="card p-5 flex flex-col">
         <div class="flex items-center justify-between mb-4">
           <h3 class="font-semibold text-white">Histórico de Trades</h3>
           <span id="trade-badge" class="text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full">0 trades</span>
         </div>
-        <div id="trades-list" class="space-y-2 max-h-80 overflow-y-auto pr-1">
+        <div id="trades-list" class="space-y-2 flex-1 overflow-y-auto pr-1" style="max-height:380px">
           <p class="text-gray-500 text-sm text-center py-8">Nenhum trade ainda...</p>
         </div>
       </div>
-      <div class="card p-5">
+
+      <!-- Feed de Sinais -->
+      <div class="card p-5 flex flex-col">
         <div class="flex items-center justify-between mb-4">
           <div>
             <h3 class="font-semibold text-white">Feed de Sinais</h3>
@@ -446,10 +416,49 @@
             </span>
           </span>
         </div>
-        <div id="feed-list" class="space-y-1.5 max-h-80 overflow-y-auto pr-1">
+        <div id="feed-list" class="space-y-1.5 flex-1 overflow-y-auto pr-1" style="max-height:380px">
           <p class="text-gray-500 text-sm text-center py-8">Aguardando sinais...</p>
         </div>
       </div>
+
+      <!-- Market Breadth — vertical -->
+      <div class="card p-5 flex flex-col">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-semibold text-white">Market Breadth</h3>
+          <span id="breadth-label" class="text-xs font-bold px-2 py-0.5 rounded bg-gray-700 text-gray-300">N/A</span>
+        </div>
+        <!-- 4 métricas verticais -->
+        <div class="flex flex-col gap-2.5 flex-1">
+          <div class="bg-gray-800/70 rounded-lg px-4 py-3 flex items-center justify-between">
+            <span class="text-[10px] text-gray-500 uppercase tracking-wider">Pairs &gt; EMA50</span>
+            <span id="breadth-alts-ema50" class="text-base font-bold text-white">—</span>
+          </div>
+          <div class="bg-gray-800/70 rounded-lg px-4 py-3 flex items-center justify-between">
+            <span class="text-[10px] text-gray-500 uppercase tracking-wider">BTC Dom.</span>
+            <span id="breadth-btc-dom" class="text-base font-bold text-white">—</span>
+          </div>
+          <div class="bg-gray-800/70 rounded-lg px-4 py-3 flex items-center justify-between">
+            <span class="text-[10px] text-gray-500 uppercase tracking-wider">Funding BTC</span>
+            <span id="breadth-funding" class="text-base font-bold text-white">—</span>
+          </div>
+          <div class="bg-gray-800/70 rounded-lg px-4 py-3 flex items-center justify-between">
+            <span class="text-[10px] text-gray-500 uppercase tracking-wider">OI Expansion</span>
+            <span id="breadth-oi" class="text-base font-bold text-white">—</span>
+          </div>
+        </div>
+        <!-- Score + status -->
+        <div class="mt-4 pt-3 border-t border-gray-800 flex items-center justify-between text-[10px]">
+          <span class="text-gray-500">Score: <span id="breadth-score" class="font-bold text-white ml-1">—</span></span>
+          <div class="flex items-center gap-2">
+            <span id="breadth-block-badge" class="hidden px-2 py-0.5 rounded font-bold bg-red-500/20 text-red-400 border border-red-500/30">🚫 BLOQUEADO</span>
+            <span class="text-gray-700">
+              <span class="text-green-500">≥40%</span> libera ·
+              <span class="text-red-500">&lt;40%</span> bloqueia
+            </span>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- ── KPIs em Tempo Real ── -->
