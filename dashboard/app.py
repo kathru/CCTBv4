@@ -1247,7 +1247,14 @@ async def trading_loop():
                 pair_score   = state.get("v4", {}).get(pair, {}).get("score", 0.0)
 
                 today_key        = datetime.now().strftime("%Y-%m-%d")
-                daily_trades     = _daily_trade_count.get(today_key, 0)
+                # Conta BUYs de hoje diretamente dos trades persistidos (sobrevive a restarts)
+                today_date_str   = datetime.now().strftime("%Y-%m-%d")
+                daily_trades     = sum(
+                    1 for t in engine.trades
+                    if t.get("side") == "BUY" and t.get("time", "")[:10] == today_date_str
+                )
+                # Sincroniza o contador em memória para que os bloqueios de limit funcionem
+                _daily_trade_count[today_key] = daily_trades
                 open_slots_count = sum(1 for s in strategy_slots.values() if s.get("qty", 0) > 0)
                 state["trades_today"]     = daily_trades
                 state["max_daily_trades"] = MAX_DAILY_TRADES
