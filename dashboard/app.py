@@ -16,17 +16,8 @@ from dotenv import load_dotenv
 
 from exchange.okx     import OKXClient
 from paper_trading.engine import PaperTradingEngine, TAKER_FEE
-# ── Estratégias ativas: trend-following + momentum ─────────────────
-from strategies.donchian_breakout      import DonchianBreakout
-from strategies.ema_pullback           import EMAPullback
-from strategies.macd_momentum          import MACDMomentum
-from strategies.volatility_guard       import VolatilityGuard
-from strategies.trend_filter           import TrendFilter
 from strategies.news_guard             import is_news_blackout, next_event
-from strategies.news_sync              import sync_if_needed as _news_sync_if_needed
-from strategies.market_breadth         import get_market_breadth
 from strategies.market_regime          import calc_adx, calc_atr
-from strategies.bb_reversion           import BBReversion
 from logger import setup_logger, log_cycle, log_trade, log_portfolio
 from notifier import notify_trade
 from dashboard.v4_orchestrator import V4Orchestrator
@@ -234,19 +225,7 @@ OKX_FEE_TIERS = [
 # Alias para compatibilidade com código que usa COINBASE_FEE_TIERS
 COINBASE_FEE_TIERS = OKX_FEE_TIERS
 
-# ── Score ponderado por regime ────────────────────────────────────
-STRATEGY_WEIGHTS = {
-    # Chaves alinhadas com o retorno de _detect_market_regime(): "bull"/"chop"/"bear"
-    "bull":  {"Donchian Breakout": 1.5, "EMA Pullback": 1.3, "MACD Momentum": 1.2},
-    "chop":  {"Donchian Breakout": 0.8, "EMA Pullback": 1.0, "MACD Momentum": 0.9},
-    "bear":  {"Donchian Breakout": 0.5, "EMA Pullback": 0.7, "MACD Momentum": 0.8},
-    # Aliases legados (fallback)
-    "trending": {"Donchian Breakout": 1.5, "EMA Pullback": 1.3, "MACD Momentum": 1.2},
-    "ranging":  {"Donchian Breakout": 0.5, "EMA Pullback": 0.9, "MACD Momentum": 0.8},
-    "neutral":  {"Donchian Breakout": 1.0, "EMA Pullback": 1.0, "MACD Momentum": 1.0},
-}
-SCORE_MIN_THRESHOLD = 0.33   # abaixo de 33% → BUY bloqueado (1 estratégia = ~33%)
-SCORE_SIZE_BOOST    = 1.4    # score 85%+ → tamanho +40%
+SCORE_MIN_THRESHOLD = 0.55   # score V4 mínimo para BUY
 
 # ── Classificação de pares ───────────────────────────────────────
 ALT_PAIRS = {"SOL-USD"}
@@ -267,12 +246,6 @@ last_buy_time:      dict = {}  # {f"{strat}:{pair}": timestamp}
 FG_GREED_MIN   = 70   # Acima de 70: bloqueia novas entradas (euforia = risco de topo)
 FG_TTL         = 3600 # cache de 1 hora (índice atualiza 1×/dia)
 
-# ── Abordagem híbrida Limit/Market ───────────────────────────────
-# EMA Pullback → Limit order ao nível EMA21 (maker 0.10%) — alta prob. de fill
-# Donchian + MACD → Market order (taker 0.40%) — breakouts exigem execução imediata
-LIMIT_STRATEGIES      = {"EMA Pullback", "BB Reversion"}  # limit order (maker 0.10%)
-LIMIT_ORDER_TIMEOUT_H = 2                  # cancela se não preencher em 2 ciclos (2h)
-pending_orders: dict  = {}                 # {f"{strat}:{pair}": {limit_price, ...}}
 
 client = OKXClient(
     api_key    = os.getenv("OKX_API_KEY",    os.getenv("API_KEY", "")),
@@ -283,33 +256,6 @@ engine = PaperTradingEngine(initial_balance_usd=10000.0)
 
 # ── V4 Orchestrator — pipeline probabilística completa ────────────
 v4 = V4Orchestrator(state_dir=os.path.join(os.path.dirname(os.path.dirname(__file__)), "data"))
-
-# ── 5 estratégias AGRESSIVAS 65/35 independentes ──────────────────────
-# 3 estratégias de tendência — foco em qualidade, menos fees
-all_strategies = [
-    DonchianBreakout(period=20, rsi_min=45.0, adx_min=20.0,
-                     rvol_period=20, rvol_min=1.3),   # breakout — market order
-    MACDMomentum(fast=12, slow=26, signal=9, ema_filter=12, rsi_max=75.0),  # momentum — market
-    EMAPullback(fast=9, mid=21, slow=50,
-                touch_tolerance_pct=0.3),              # pullback — limit order
-    BBReversion(bb_period=20, bb_std=2.0,
-                rsi_period=14, rsi_oversold=35.0),    # mean reversion CHOP — limit order
-]
-
-# Mapa de candles por estratégia
-STRAT_CANDLES = {
-    "Donchian Breakout": CANDLE_1H,   # 1H principal + confirmação 6H (proxy 4H)
-    "EMA Pullback":      CANDLE_1H,
-    "MACD Momentum":     CANDLE_1H,
-}
-
-# Guard de risco global — só dispara em crashes REAIS (>25% vol = mercado caindo)
-vol_guard    = VolatilityGuard(lookback=24, block_std=1.0, sell_std=2.0)  # 1H candles: BLOCK>1σ, SELL>2σ
-trend_filter = TrendFilter(period=50)   # EMA50 1H — alinhado com EMA Pullback e MACD Momentum
-
-# ── Cooldown anti-whipsaw após SL (por slot) ─────────────────────
-sl_cooldowns: dict = {}   # {f"{strat}:{pair}": cycles_remaining}
-# sl_history removido na Fase 4 — cooldown escalante substituído por cooldown fixo
 
 # Sinaliza ao trading_loop para rodar o próximo ciclo imediatamente (sem esperar CYCLE_INTERVAL)
 _immediate_cycle = asyncio.Event()
@@ -371,10 +317,8 @@ SLOTS_FILE = os.path.join(os.path.dirname(os.path.dirname(
 
 def _load_slots() -> dict:
     slots = {}
-    for s in all_strategies:
-        for p in PAIRS:
-            slots[f"{s.name}:{p}"] = _empty_slot()
     for p in PAIRS:
+        slots[f"V4:{p}"]     = _empty_slot()
         slots[f"manual:{p}"] = _empty_slot()
     try:
         if os.path.exists(SLOTS_FILE):
@@ -403,49 +347,7 @@ def _save_manual(s): _save_slots(s)
 STRAT_PNL_FILE = os.path.join(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))), "data", "strategy_pnl.json")
 
-def _load_strategy_pnl() -> dict:
-    pnl = {s.name: {"realized": 0.0, "trades": 0, "buys": 0, "sells": 0}
-           for s in all_strategies}
-    try:
-        if os.path.exists(STRAT_PNL_FILE):
-            saved = json.load(open(STRAT_PNL_FILE))
-            for k, v in saved.items():
-                if k in pnl:
-                    pnl[k].update(v)
-    except Exception:
-        pass
-    return pnl
-
-def _save_strategy_pnl(pnl: dict):
-    try:
-        os.makedirs(os.path.dirname(STRAT_PNL_FILE), exist_ok=True)
-        with open(STRAT_PNL_FILE, "w") as f:
-            json.dump(pnl, f, indent=2)
-    except Exception:
-        pass
-
-strategy_pnl = _load_strategy_pnl()
-
-def _attr_pnl(strat_name: str, pnl_usd: float):
-    """Registra P&L realizado e contabiliza o sell na estratégia."""
-    if strat_name in strategy_pnl:
-        strategy_pnl[strat_name]["realized"] += pnl_usd
-        strategy_pnl[strat_name]["sells"]    = strategy_pnl[strat_name].get("sells", 0) + 1
-        strategy_pnl[strat_name]["trades"]   = (strategy_pnl[strat_name].get("buys", 0)
-                                                + strategy_pnl[strat_name]["sells"])
-    _save_strategy_pnl(strategy_pnl)
-    state["strategy_pnl"] = strategy_pnl
-
-def _count_buy(strat_name: str):
-    """Contabiliza um BUY na estratégia."""
-    if strat_name in strategy_pnl:
-        strategy_pnl[strat_name]["buys"]   = strategy_pnl[strat_name].get("buys", 0) + 1
-        strategy_pnl[strat_name]["trades"] = (strategy_pnl[strat_name]["buys"]
-                                              + strategy_pnl[strat_name].get("sells", 0))
-    _save_strategy_pnl(strategy_pnl)
-    state["strategy_pnl"] = strategy_pnl
-
-last_signals: dict = {}   # {f"{pair}:{strat}": signal}
+last_signals: dict = {}
 
 logger = setup_logger("dashboard")
 connected_clients: List[WebSocket] = []
@@ -975,8 +877,6 @@ async def trading_loop():
         state["cycle"] = _current_cycle()
         now_str = datetime.now().strftime("%H:%M:%S")
 
-        # Auto-sync do calendário de notícias (a cada 12h se API configurada)
-        _news_sync_if_needed()
         state["last_update"]    = now_str
         state["cycle_start_ts"] = int(time.time())
 
@@ -1028,25 +928,7 @@ async def trading_loop():
         except asyncio.TimeoutError:
             logger.warning("[Loop] Pre-fetch candles timeout — usando cache existente")
 
-        # ── Market Breadth — calculado ANTES do regime (alimenta bear signals) ─
-        try:
-            _breadth_candles = {
-                p: _candle_cache.get(f"{p}:{CANDLE_1H}", {}).get("data", [])
-                for p in PAIRS
-            }
-            _breadth = await asyncio.wait_for(
-                loop.run_in_executor(None, get_market_breadth, _breadth_candles),
-                timeout=15.0
-            )
-        except Exception as _be:
-            logger.warning(f"[MarketBreadth] Erro: {_be}")
-            _breadth = None
-        state["market_breadth"] = _breadth.to_dict() if _breadth else {
-            "alts_above_ema50_pct": None, "btc_dominance": None,
-            "funding_rate_btc": None, "funding_rate_avg": None,
-            "oi_expansion_btc": None, "oi_expansion_avg": None,
-            "score": None, "label": "N/A", "size_multiplier": 1.0,
-        }
+        _breadth = None
 
         # ── V4 Risk Engine — atualiza estado global antes do loop de pares ──
         try:
@@ -1217,460 +1099,16 @@ async def trading_loop():
                         _record_trade("SELL", pair, _v4_qty, price, _v4_sell_usd, "V4:signal")
                         logger.info(f"[V4][{pair}] ✅ SELL ${_v4_sell_usd:.2f} @ ${price:,.2f} | pnl={_v4_pnl:.2f}")
 
-                # Macro: tendência EMA9·21·50 em 1H (idêntico ao EMA Pullback) + vol diária
-                df_1h_trend = trend_filter.candles_to_df(candles_1h)
-                try:
-                    import pandas as _pd
-                    _c = df_1h_trend["close"]
-                    _e9  = _c.ewm(span=9,  adjust=False).mean()
-                    _e21 = _c.ewm(span=21, adjust=False).mean()
-                    _e50 = _c.ewm(span=50, adjust=False).mean()
-                    if len(_c) >= 50:
-                        if float(_e9.iloc[-1]) > float(_e21.iloc[-1]) > float(_e50.iloc[-1]):
-                            trend = "BUY"    # EMAs alinhadas em alta
-                        elif float(_e9.iloc[-1]) < float(_e21.iloc[-1]):
-                            trend = "SELL"   # EMA9 abaixo de EMA21 — perda de tendência
-                        else:
-                            trend = "HOLD"
-                    else:
-                        trend = "HOLD"
-                except Exception:
-                    trend = trend_filter.analyze(df_1h_trend)  # fallback
-                df_1h_vg   = vol_guard.candles_to_df(candles_1h)
-                vol_signal = vol_guard.analyze(df_1h_vg)
-                pair_signals = {"Trend": trend, "Vol Guard": vol_signal}
-                # Defaults caso vol_guard dispare e o bloco else seja pulado
-                pair_score           = 0.0
-                _adx_val             = 20.0
-                donchian_6h_confirmed = True
+                pair_signals = {}
+                pair_score   = state.get("v4", {}).get(pair, {}).get("score", 0.0)
 
-                # ── Verificação de Pending Limit Orders (EMA Pullback) ──────────
-                # Verifica se alguma limit order pendente foi preenchida neste ciclo.
-                # Fill condition: candle low ≤ limit_price (preço chegou ao nivel desejado)
-                for _strat in all_strategies:
-                    _pk = f"{_strat.name}:{pair}"
-                    _po = pending_orders.get(_pk)
-                    if not _po:
-                        continue
-                    _candle_low = float(candles_1h[-2][3] if candles_1h and len(candles_1h) >= 2
-                                        else (candles_1h[-1].get("low", price) if candles_1h and isinstance(candles_1h[-1], dict)
-                                              else price))
-                    _now_ts = time.time()
-                    if _candle_low <= _po["limit_price"]:
-                        # ✅ FILLED — executa ao preço limite com MAKER fee
-                        _fill_px  = _po["limit_price"]
-                        _fill_usd = _po["trade_usd"]
-                        _fill_qty = _fill_usd / _fill_px
-                        if engine.buy(symbol, _fill_usd, _fill_px, f"{_strat.name}:limit"):
-                            _slot = strategy_slots.setdefault(_pk, _empty_slot())
-                            _slot["qty"]       = _fill_qty
-                            _slot["entry"]     = _fill_px
-                            _slot["peak"]      = _fill_px
-                            _slot["entry_usd"] = _fill_usd
-                            _slot["sl_pct"]    = _po.get("sl_pct", 0.0)
-                            _slot["be_sl"]     = 0.0
-                            _record_trade("BUY", pair, _fill_qty, _fill_px, _fill_usd, f"{_strat.name}:limit")
-                            _count_buy(_strat.name)
-                            last_buy_time[_pk] = _now_ts
-                            _daily_trade_count[datetime.now().strftime("%Y-%m-%d")] = \
-                                _daily_trade_count.get(datetime.now().strftime("%Y-%m-%d"), 0) + 1
-                            maker_fee_pct = _current_maker_fee() * 100
-                            logger.info(f"[{pair}][{_strat.name}] ✅ LIMIT FILLED @ ${_fill_px:,.2f} "
-                                        f"| fee={maker_fee_pct:.2f}% (maker)")
-                            state["feed"].insert(0, {
-                                "time": now_str, "cycle": state["cycle"],
-                                "pair": pair, "strategy": _strat.name,
-                                "signal": "BUY", "price": _fill_px,
-                                "executed": True,
-                                "note": f"LIMIT filled · maker {maker_fee_pct:.2f}%",
-                            })
-                            state["feed"] = state["feed"][:100]
-                        del pending_orders[_pk]
-                    elif _now_ts > _po["expires_at"]:
-                        # ❌ EXPIRED — cancela sem executar
-                        logger.info(f"[{pair}][{_strat.name}] ⏰ LIMIT expirado sem fill "
-                                    f"(limit=${_po['limit_price']:,.2f} vs low=${_candle_low:,.2f})")
-                        state["feed"].insert(0, {
-                            "time": now_str, "cycle": state["cycle"],
-                            "pair": pair, "strategy": _strat.name,
-                            "signal": "HOLD", "price": _po["limit_price"],
-                            "executed": False,
-                            "note": f"LIMIT expirado (não preencheu em {LIMIT_ORDER_TIMEOUT_H}h)",
-                        })
-                        state["feed"] = state["feed"][:100]
-                        del pending_orders[_pk]
-
-                # ── Volatilidade: BLOCK (1σ) bloqueia entradas; SELL (2σ) fecha posições ──
-                _vol_buy_blocked = vol_signal in ("SELL", "BLOCK")
-                if vol_signal == "SELL":
-                    # vol_guard: reduz 5%/ciclo em cada slot aberto deste par
-                    max_usd = portfolio_total * TRADE_PCT
-                    for strat in all_strategies:
-                        vkey = f"{strat.name}:{pair}"
-                        vslot = strategy_slots.get(vkey, _empty_slot())
-                        if vslot["qty"] > 0:
-                            vqty = min(vslot["qty"], max_usd / price if price > 0 else vslot["qty"])
-                            vnet = vqty * price * (1 - _current_taker_fee())
-                            if engine.sell(symbol, vqty, price, f"vol_guard:{strat.name}"):
-                                pnl_vg = vnet - vslot["entry"] * vqty
-                                vslot["realized"] += pnl_vg
-                                _attr_pnl(strat.name, pnl_vg)
-                                _record_trade("SELL", pair, vqty, price, vnet, f"vol_guard:{strat.name}")
-                                # ← slot só atualiza se venda foi executada
-                                rem = vslot["qty"] - vqty
-                                if rem < 1e-8:
-                                    vslot.update({"qty": 0.0, "entry": 0.0, "peak": 0.0, "pyramids": 0, "be_sl": 0.0})
-                                else:
-                                    vslot["qty"] = rem
-                    _save_slots(strategy_slots)
-                    logger.info(f"[{pair}] VOLATILIDADE EXTREMA — reduzindo posições {TRADE_PCT*100:.0f}%/ciclo")
-                    # ← Não executa estratégias neste ciclo para evitar re-abertura imediata
-
-                else:
-                  # ── PASSO 1: coleta TODOS os sinais antes de agir ─────────
-                  # Donchian: 1H principal, confirmação 6H (proxy 4H)
-                  # Calcular confirmação 6H para Donchian
-                  def _donchian_6h_bullish(candles_6h_data: list) -> bool:
-                      """Confirmação 6H (proxy 4H): preço acima da EMA20 no 6H."""
-                      if not candles_6h_data or len(candles_6h_data) < 20:
-                          return True  # sem dados → não bloqueia
-                      try:
-                          import pandas as _pd6
-                          df6 = _pd6.DataFrame(candles_6h_data,
-                                               columns=["start","low","high","open","close","volume"])
-                          closes6 = df6["close"].astype(float)
-                          ema20_6h = float(closes6.ewm(span=20, adjust=False).mean().iloc[-1])
-                          price_6h = float(closes6.iloc[-1])
-                          return price_6h > ema20_6h
-                      except Exception:
-                          return True
-
-                  donchian_6h_confirmed = _donchian_6h_bullish(candles_6h)
-
-                  candle_map  = {
-                      "Donchian Breakout": candles_1h,   # análise 1H
-                      "EMA Pullback":      candles_1h,
-                      "MACD Momentum":     candles_1h,
-                  }
-                  signals_this_cycle = {}
-
-                  for strat in all_strategies:
-                      raw    = candle_map.get(strat.name, candles_1h)
-                      df     = strat.candles_to_df(raw)
-                      signal = strat.analyze(df)
-                      pair_signals[strat.name]        = signal
-                      signals_this_cycle[strat.name]  = signal
-
-                  # Confidence score e ADX para este par
-                  try:
-                      import pandas as _pdx
-                      _df_adx = _pdx.DataFrame(candles_1h, columns=["start","low","high","open","close","volume"])
-                      for _c in ["low","high","open","close","volume"]:
-                          _df_adx[_c] = _pdx.to_numeric(_df_adx[_c], errors="coerce")
-                      _adx_val = calc_adx(_df_adx)
-                  except Exception:
-                      _adx_val = 20.0
-                  pair_score = _calc_confidence_score(signals_this_cycle, market_mode, _adx_val)
-
-                  # Feed: registra mudanças de sinal (ou força todos no 1º ciclo pós-reset)
-                  global _force_feed_populate
-                  for strat in all_strategies:
-                      signal  = signals_this_cycle[strat.name]
-                      sig_key = f"{pair}:{strat.name}"
-                      changed = signal != last_signals.get(sig_key)
-                      if changed or _force_feed_populate:
-                          last_signals[sig_key] = signal
-                          trade_usd = portfolio_total * TRADE_PCT
-                          state["feed"].insert(0, {
-                              "time":     now_str,
-                              "cycle":    state["cycle"],
-                              "pair":     pair,
-                              "strategy": strat.name,
-                              "signal":   signal,
-                              "price":    price,
-                              "executed": False,
-                              "note":     f"R${trade_usd*usd_brl:.0f} ({TRADE_PCT*100:.0f}% PL)",
-                          })
-                          state["feed"] = state["feed"][:100]
-                  # Após processar o último par, desliga o flag
-                  if pair == PAIRS[-1] and _force_feed_populate:
-                      _force_feed_populate = False
-                      logger.info("[Feed] Force-populate concluído — feed populado com sinais iniciais")
-
-                  # ── PASSO 2: execução independente por estratégia ────────
-                  extreme_greed = fg_value >= FG_GREED_MIN
-                  # extreme_fear removido — não era usado em nenhuma lógica
-
-                  # Circuit breaker diário
-                  today_str    = now_str[:8] if len(now_str) == 8 else str(now_str)[:10]
-                  today_key    = datetime.now().strftime("%Y-%m-%d")
-                  daily_trades = _daily_trade_count.get(today_key, 0)
-                  circuit_open = daily_trades >= MAX_DAILY_TRADES
-
-                  # Slots abertos
-                  open_slots_count = sum(1 for s in strategy_slots.values() if s.get("qty", 0) > 0)
-
-                  # Tamanho dinâmico por par — usa candles 1h (mais estável)
-                  # dynamic_pct removido — sizing usa TRADE_PCT × regime_mult
-
-                  # Expor ao frontend
-                  state["trades_today"]    = daily_trades
-                  state["max_daily_trades"] = MAX_DAILY_TRADES
-                  state["open_slots_count"] = open_slots_count
-                  state["max_open_slots"]   = MAX_OPEN_SLOTS
-
-                  for strat in all_strategies:
-                      key    = f"{strat.name}:{pair}"
-                      slot   = strategy_slots.setdefault(key, _empty_slot())
-                      signal = signals_this_cycle.get(strat.name, "HOLD")
-
-                      if slot["qty"] > 0:
-                          # ── Limpa posições de "pó" (valor < $0.50) ──────────────
-                          slot_value_usd = slot["qty"] * price
-                          if slot_value_usd < 0.50:
-                              logger.info(f"[{pair}][{strat.name}] Zerando posição de pó: {slot['qty']:.10f} val=${slot_value_usd:.4f}")
-                              engine.holdings[symbol] = max(0, engine.holdings.get(symbol, 0) - slot["qty"])
-                              slot.update({"qty": 0.0, "entry": 0.0, "peak": 0.0, "pyramids": 0, "be_sl": 0.0})
-                              continue
-
-                          slot["peak"] = max(slot["peak"], price)
-                          gain_pct = (price - slot["entry"]) / slot["entry"] * 100
-
-                          # ── Sistema de saída unificado (Fase 3) ────────────────
-                          tp_hit, sl_hit, effective_sl, tp_level, _sl_pct = \
-                              _calc_exit(slot, price, pair)
-                          slot["be_sl"] = effective_sl  # persiste nível máximo de SL
-
-                          def _sell_slot(qty, label, is_sl=False):
-                              net = qty * price * (1 - _current_taker_fee())
-                              sold = engine.sell(symbol, qty, price, f"{strat.name}:{label}")
-                              if sold:
-                                  pnl = net - slot["entry"] * qty
-                                  slot["realized"] += pnl
-                                  _attr_pnl(strat.name, pnl)
-                                  _record_trade("SELL", pair, qty, price, net, f"{strat.name}:{label}")
-                                  _daily_trade_count[today_key] = _daily_trade_count.get(today_key, 0) + 1
-                                  logger.info(f"[{pair}][{strat.name}] SELL {label} gain={gain_pct:+.2f}% P&L ${pnl:+.2f}")
-                                  if is_sl:
-                                      # Fase 4: cooldown fixo pós-SL (3 ciclos = 3h)
-                                      sl_cooldowns[key] = SL_COOLDOWN_CYCLES
-                                  # Sempre insere novo entry no topo — mesma lógica do BUY executado
-                                  state["feed"].insert(0, {
-                                      "time": now_str, "cycle": state["cycle"],
-                                      "pair": pair, "strategy": strat.name,
-                                      "signal": "SELL", "price": price,
-                                      "executed": True,
-                                      "note": label,
-                                  })
-                                  state["feed"] = state["feed"][:100]
-                                  # ← Só atualiza o slot SE a venda foi executada no engine
-                                  rem = slot["qty"] - qty
-                                  if rem < 1e-8:
-                                      slot.update({"qty": 0.0, "entry": 0.0, "peak": 0.0, "pyramids": 0, "be_sl": 0.0})
-                                  else:
-                                      slot["qty"] = rem
-                                      slot["peak"] = price  # reseta peak após venda parcial
-                              else:
-                                  logger.warning(f"[{pair}][{strat.name}] SELL {label} FALHOU — engine rejeitou (held insuficiente?)")
-
-                          if tp_hit:
-                              _sell_slot(slot["qty"], f"TP+{_sl_pct*2:.1f}%")
-                          elif sl_hit:
-                              lbl = "BE-stop" if gain_pct >= 0 else f"SL-{_sl_pct:.1f}%"
-                              _sell_slot(slot["qty"], lbl, is_sl=True)
-                          elif signal == "SELL":
-                              max_qty = portfolio_total * TRADE_PCT / price
-                              sell_q  = min(slot["qty"], max_qty)
-                              if sell_q > 1e-8:
-                                  _sell_slot(sell_q, "SELL")
-                          # Pyramid removido na Fase 4 — sem re-entry em posição aberta
-
-                          slot["unrealized"] = (price - slot["entry"]) * slot["qty"] if slot["qty"] > 0 else 0.0
-
-                      elif signal == "BUY" and not extreme_greed:
-                          # ── Gates de qualidade — avaliados em sequência ──────────
-                          _buy_blocked = None
-
-                          # G-Vol: VolatilityGuard BLOCK (1σ) — spread/volatilidade elevada
-                          if _vol_buy_blocked:
-                              _buy_blocked = f"VolGuard: volatilidade {'extrema (SELL)' if vol_signal == 'SELL' else 'elevada (BLOCK)'} — entradas bloqueadas"
-
-                          # G-0.5: Market Breadth — apenas reduz size (nunca bloqueia hard)
-                          # _breadth_mult já aplica 0.5/0.7/1.0 na execução abaixo.
-                          # Hard-block removido na Fase 1: breadth DANGER não é sinal
-                          # suficiente para zero-trade; o SL protege posições abertas.
-
-                          # G-1: News Volatility Guard — bloqueia antes/depois de eventos macro
-                          _news_blocked, _news_reason = is_news_blackout(
-                              custom_events_path=NEWS_EVENTS_FILE
-                          )
-                          if _news_blocked:
-                              _buy_blocked = _news_reason
-
-                          # G0: Circuit breaker diário
-                          if circuit_open:
-                              _buy_blocked = f"circuit breaker ({daily_trades}/{MAX_DAILY_TRADES} trades hoje)"
-
-                          # G0b: Max slots abertos
-                          elif open_slots_count >= MAX_OPEN_SLOTS:
-                              _buy_blocked = f"max slots ({open_slots_count}/{MAX_OPEN_SLOTS})"
-
-                          # G0c: Cooldown de 1h entre BUYs
-                          elif time.time() - last_buy_time.get(key, 0) < BUY_COOLDOWN_SECONDS:
-                              _buy_blocked = f"cooldown 3h ativo"
-
-                          # G1: Bear market — bloqueia BUYs EXCETO se o par está
-                          # individualmente bullish (acima da própria EMA200 1H).
-                          # Permite capturar SOL/ETH em recuperação mesmo com BTC bear.
-                          elif market_mode == "bear":
-                              try:
-                                  import pandas as _pd_g1
-                                  _c1h_g1 = _pd_g1.DataFrame(
-                                      candles_1h, columns=["start","low","high","open","close","volume"]
-                                  )
-                                  for _col in ["close"]:
-                                      _c1h_g1[_col] = _pd_g1.to_numeric(_c1h_g1[_col], errors="coerce")
-                                  _ema200_1h = float(
-                                      _c1h_g1["close"].ewm(span=200, adjust=False).mean().iloc[-1]
-                                  )
-                                  _pair_above_ema200 = price > _ema200_1h
-                              except Exception:
-                                  _pair_above_ema200 = False
-                              if not _pair_above_ema200:
-                                  _buy_blocked = f"bear market (par < EMA200 1H)"
-
-                          # G1b: Donchian — confirmação obrigatória no 6H (proxy 4H)
-                          elif strat.name == "Donchian Breakout" and not donchian_6h_confirmed:
-                              _buy_blocked = f"Donchian 6H bearish (proxy 4H)"
-
-                          # G1c: BB Reversion — exclusivo do regime CHOP
-                          # Em BULL, trend-following domina; mean reversion luta contra a tendência
-                          elif strat.name == "BB Reversion" and market_mode == "bull":
-                              _buy_blocked = f"BB Reversion bloqueado em BULL (use Donchian/MACD)"
-
-                          # G2: Score mínimo 60%
-                          elif pair_score < SCORE_MIN_THRESHOLD:
-                              _buy_blocked = f"score {pair_score:.0%} < {SCORE_MIN_THRESHOLD:.0%}"
-
-                          # G3: Min Risk/Reward 2.5:1
-                          else:
-                              _sl_max_pct = PAIR_SL_RANGE.get(pair, (0.05, 0.08))[1]
-                              # RR fixo 2:1 pelo sistema unificado — gate G3 satisfeito
-                              _rr = 2.0
-                              if False:  # gate G3 desativado na Fase 3 (RR é fixo 2:1)
-                                  _buy_blocked = f"RR={_rr:.2f} < 2.5:1"
-
-                          # G4: Correlação de alts
-                          if _buy_blocked is None and pair in ALT_PAIRS:
-                              _open_alts = sum(1 for k2, s2 in strategy_slots.items()
-                                               if s2.get("qty", 0) > 0
-                                               and k2.split(":")[-1] in ALT_PAIRS)
-                              _alt_sym = {p.split("-")[0] for p in ALT_PAIRS}
-                              _alt_val = sum(
-                                  s2["qty"] * (_last_prices.get(k2.split(":")[-1], {}).get("price") or 0)
-                                  for k2, s2 in strategy_slots.items()
-                                  if s2.get("qty", 0) > 0 and k2.split(":")[-1] in _alt_sym
-                              )
-                              _alt_exp = _alt_val / portfolio_total if portfolio_total > 0 else 0
-                              if _open_alts >= 2:
-                                  _buy_blocked = f"max 2 alts ({_open_alts} abertas)"
-                              elif _alt_exp >= 0.25:
-                                  _buy_blocked = f"alt exposure {_alt_exp:.0%} >= 25%"
-
-                          # G4b removido na Fase 1: com apenas 3 pares (BTC/ETH/SOL),
-                          # o cap de 35% BTC+ETH bloqueava demais. G4 (max alts) é suficiente.
-
-                          # G5: SL cooldown
-                          cooldown = sl_cooldowns.get(key, 0)
-                          if _buy_blocked is None and cooldown > 0:
-                              sl_cooldowns[key] = cooldown - 1
-                              _buy_blocked = f"SL cooldown ({cooldown} ciclos)"
-
-                          if _buy_blocked:
-                              logger.debug(f"[{pair}][{strat.name}] BUY bloqueado — {_buy_blocked}")
-                          else:
-                              # ── Sizing: TRADE_PCT × regime_mult ──────────────────
-                              _regime_mult = 1.0 if market_mode == "bull" else \
-                                             0.7 if market_mode == "chop" else 0.5
-                              trade_usd = portfolio_total * TRADE_PCT * _regime_mult
-
-                              # SL% para usar na ordem
-                              _sl_min, _sl_max = PAIR_SL_RANGE.get(pair, (0.03, 0.07))
-                              _sl_at_entry = _atr_sl_pct if _atr_sl_pct else _sl_max * 100
-                              _sl_pct_entry = max(_sl_min * 100, min(_sl_max * 100, _sl_at_entry))
-
-                              if strat.name in LIMIT_STRATEGIES and key not in pending_orders:
-                                  # ── LIMIT ORDER (EMA Pullback → maker 0.10%) ───────
-                                  # Limit price: EMA21 para EMA Pullback, Banda Inferior BB para BB Reversion
-                                  try:
-                                      _df_lim = pd.DataFrame(candles_1h,
-                                          columns=["start","low","high","open","close","volume"])
-                                      _df_lim["close"] = pd.to_numeric(_df_lim["close"], errors="coerce")
-                                      _closes_lim = _df_lim["close"]
-                                      if strat.name == "BB Reversion":
-                                          # Limit = Banda Inferior BB(20,2) do último candle fechado
-                                          _bb_mid = _closes_lim.rolling(20).mean()
-                                          _bb_std = _closes_lim.rolling(20).std()
-                                          _limit_px = float((_bb_mid - 2.0 * _bb_std).iloc[-2])
-                                      else:
-                                          # EMA Pullback: limit = EMA21
-                                          _limit_px = float(_closes_lim.ewm(span=21, adjust=False).mean().iloc[-2])
-                                  except Exception:
-                                      _limit_px = price * 0.9995   # fallback: 0.05% abaixo
-
-                                  fee_margin = _current_maker_fee()
-                                  if engine.balance_usd >= trade_usd * (1 + fee_margin) and trade_usd > 1.0:
-                                      pending_orders[key] = {
-                                          "limit_price": round(_limit_px, 4),
-                                          "trade_usd":   round(trade_usd, 4),
-                                          "expires_at":  time.time() + LIMIT_ORDER_TIMEOUT_H * CYCLE_INTERVAL,
-                                          "sl_pct":      _sl_pct_entry,
-                                      }
-                                      last_buy_time[key] = time.time()  # previne re-sinalização imediata
-                                      pct_used = (trade_usd / engine.initial_balance) * 100 if engine.initial_balance > 0 else 0
-                                      logger.info(f"[{pair}][{strat.name}] 📋 LIMIT @ ${_limit_px:,.4f} "
-                                                  f"(market=${price:,.2f}) | R${trade_usd*usd_brl:.0f} | maker fee")
-                                      state["feed"].insert(0, {
-                                          "time": now_str, "cycle": state["cycle"],
-                                          "pair": pair, "strategy": strat.name,
-                                          "signal": "BUY", "price": _limit_px,
-                                          "executed": False,
-                                          "note": f"LIMIT R${trade_usd*usd_brl:.0f} | maker 0.10%",
-                                      })
-                                      state["feed"] = state["feed"][:100]
-
-                              elif strat.name not in LIMIT_STRATEGIES:
-                                  # ── MARKET ORDER (Donchian, MACD → taker 0.40%) ────
-                                  fee_margin = _current_taker_fee()
-                                  if engine.balance_usd < trade_usd * (1 + fee_margin):
-                                      trade_usd = max(0, engine.balance_usd * (1 - fee_margin))
-
-                                  if trade_usd > 1.0:
-                                      qty = trade_usd / price
-                                      if engine.buy(symbol, trade_usd, price, strat.name):
-                                          slot["qty"]       = qty
-                                          slot["entry"]     = price
-                                          slot["peak"]      = price
-                                          slot["entry_usd"] = trade_usd
-                                          slot["sl_pct"]    = _sl_pct_entry
-                                          slot["be_sl"]     = 0.0
-                                          _record_trade("BUY", pair, qty, price, trade_usd, strat.name)
-                                          _count_buy(strat.name)
-                                          last_buy_time[key] = time.time()
-                                          _daily_trade_count[today_key] = daily_trades + 1
-                                          pct_used = (trade_usd / engine.initial_balance) * 100 if engine.initial_balance > 0 else 0
-                                          logger.info(f"[{pair}][{strat.name}] ✅ MARKET BUY {pct_used:.1f}% "
-                                                      f"R${trade_usd*usd_brl:.0f} @ ${price:,.2f} | taker fee")
-                                          state["feed"].insert(0, {
-                                              "time": now_str, "cycle": state["cycle"],
-                                              "pair": pair, "strategy": strat.name,
-                                              "signal": "BUY", "price": price,
-                                              "executed": True,
-                                              "note": f"MARKET R${trade_usd*usd_brl:.0f} | taker 0.40%",
-                                          })
-                                          state["feed"] = state["feed"][:100]
-                                  else:
-                                      logger.info(f"[{pair}][{strat.name}] BUY negado — saldo insuficiente")
+                today_key        = datetime.now().strftime("%Y-%m-%d")
+                daily_trades     = _daily_trade_count.get(today_key, 0)
+                open_slots_count = sum(1 for s in strategy_slots.values() if s.get("qty", 0) > 0)
+                state["trades_today"]     = daily_trades
+                state["max_daily_trades"] = MAX_DAILY_TRADES
+                state["open_slots_count"] = open_slots_count
+                state["max_open_slots"]   = MAX_OPEN_SLOTS
 
                 # ── Slot manual: usa mesma regra unificada (Fase 3) ─────────────
                 ms = strategy_slots.get(f"manual:{pair}")
@@ -1696,28 +1134,19 @@ async def trading_loop():
 
                 # ── Verificação de consistência slots ↔ engine ───────────────
                 # Garante que slots não acumulem qty quando engine não tem posição
-                held_in_engine = engine.holdings.get(symbol, 0)
-                slots_total_qty = sum(
-                    strategy_slots.get(f"{s.name}:{pair}", {}).get("qty", 0)
-                    for s in all_strategies
-                ) + strategy_slots.get(f"manual:{pair}", {}).get("qty", 0)
+                held_in_engine  = engine.holdings.get(symbol, 0)
+                v4_slot_qty     = strategy_slots.get(f"V4:{pair}", {}).get("qty", 0)
+                manual_slot_qty = strategy_slots.get(f"manual:{pair}", {}).get("qty", 0)
+                slots_total_qty = v4_slot_qty + manual_slot_qty
 
-                if held_in_engine < slots_total_qty - 1e-6:
-                    # Engine tem menos que os slots declaram — corrige proporcionalmente
+                if held_in_engine < slots_total_qty - 1e-6 and slots_total_qty > 1e-10:
                     logger.warning(f"[{pair}] INCONSISTÊNCIA: engine={held_in_engine:.6f} slots={slots_total_qty:.6f} — corrigindo")
-                    if slots_total_qty > 1e-10:
-                        ratio = held_in_engine / slots_total_qty
-                        for s in all_strategies:
-                            sk = f"{s.name}:{pair}"
-                            if strategy_slots.get(sk, {}).get("qty", 0) > 0:
-                                strategy_slots[sk]["qty"] *= ratio
-                                if strategy_slots[sk]["qty"] < 1e-8:
-                                    strategy_slots[sk].update({"qty": 0.0, "entry": 0.0, "peak": 0.0, "pyramids": 0, "be_sl": 0.0})
-                        ms_key = f"manual:{pair}"
-                        if strategy_slots.get(ms_key, {}).get("qty", 0) > 0:
-                            strategy_slots[ms_key]["qty"] *= ratio
-                            if strategy_slots[ms_key]["qty"] < 1e-8:
-                                strategy_slots[ms_key].update({"qty": 0.0, "entry": 0.0, "peak": 0.0, "be_sl": 0.0})
+                    ratio = held_in_engine / slots_total_qty
+                    for sk in [f"V4:{pair}", f"manual:{pair}"]:
+                        if strategy_slots.get(sk, {}).get("qty", 0) > 0:
+                            strategy_slots[sk]["qty"] *= ratio
+                            if strategy_slots[sk]["qty"] < 1e-8:
+                                strategy_slots[sk].update({"qty": 0.0, "entry": 0.0, "peak": 0.0, "be_sl": 0.0})
 
                 # ── Salva slots e atualiza signals no state ───────────────────
                 _save_slots(strategy_slots)
