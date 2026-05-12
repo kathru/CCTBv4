@@ -107,77 +107,18 @@ def _get_candles(pair: str, granularity: str, limit: int = 100) -> list:
 _last_prices: dict = {}      # {pair: float}
 
 
-# _dynamic_tp removida — obsoleta após Fase 3 (TP = SL × 2)
-
-# _dynamic_tp_by_regime removida na Fase 3 — TP agora = SL × 2 (RR 2:1 fixo).
 
 def _detect_market_regime(candles_1h: list, candles_6h: list,
                            breadth=None) -> tuple:
-    """
-    Detecta o regime global de mercado baseado no BTC (Fase 1 — simplificado).
-
-    Retorna: (regime: str, bear_signals: list[str])
-      regime       → 'bull' | 'chop' | 'bear'
-      bear_signals → lista informativa (não mais usada para reclassificação)
-
-    Regras simples e testáveis:
-      'bear' → BTC < EMA200 no 6H  (sinal estrutural único)
-      'bull' → BTC > EMA200 + EMA50 > EMA200 + ADX > 20
-      'chop' → qualquer outra condição (ADX < 20 ou EMA50 < EMA200)
-
-    Fase 1: removidos 4 sinais adicionais e reclassificação chop→bear.
-    Motivo: sinais correlacionados criavam false negatives sem adicionar
-    informação independente. Menos parâmetros = menos overfitting.
-    """
-    bear_signals: list = []
-
-    if not candles_6h or len(candles_6h) < 50:
-        return "chop", bear_signals
-    try:
-        import pandas as _pd
-
-        _COLS = ["start", "low", "high", "open", "close", "volume"]
-        _NUM  = ["low", "high", "open", "close", "volume"]
-
-        def _to_df(candles: list) -> "_pd.DataFrame":
-            """Cria DataFrame de candles garantindo colunas numéricas."""
-            df = _pd.DataFrame(candles, columns=_COLS)
-            for col in _NUM:
-                df[col] = _pd.to_numeric(df[col], errors="coerce")
-            return df
-
-        df6 = _to_df(candles_6h)
-        closes6 = df6["close"]
-        ema50_s  = closes6.ewm(span=50,  adjust=False).mean()
-        ema200_s = closes6.ewm(span=200, adjust=False).mean()
-        price    = float(closes6.iloc[-1])
-        e50      = float(ema50_s.iloc[-1])
-        e200     = float(ema200_s.iloc[-1])
-
-        # ── Sinal único bear: preço vs EMA200 6H ─────────────────────────────
-        if price < e200:
-            bear_signals.append("Preço < EMA200 6H")
-            return "bear", bear_signals
-
-        # ── ADX para distinguir bull vs chop ──────────────────────────────────
-        adx_val = 20.0
-        if candles_1h and len(candles_1h) >= 30:
-            df1h    = _to_df(candles_1h)
-            adx_val = calc_adx(df1h)
-
-        # ── Bull: EMA alinhadas + tendência forte ──────────────────────────────
-        if price > e200 and e50 > e200 and adx_val >= 20:
-            return "bull", bear_signals
-
-        # ── Chop: qualquer outra condição ─────────────────────────────────────
-        return "chop", bear_signals
-
-        return "chop", bear_signals
-
-    except Exception as _ex:
-        import traceback as _tb
-        logger.warning(f"[Regime] Erro na detecção: {_ex}\n{_tb.format_exc()}")
-        return "chop", []
+    """Wrapper legado — delega ao V4 Regime Engine via state."""
+    regime = state.get("v4", {}).get("BTC-USD", {}).get("regime", "MEAN_REVERTING_CHOP")
+    regime_map = {
+        "TREND_EXPANSION": "bull", "TREND_EXHAUSTION": "bull",
+        "VOLATILITY_COMPRESSION": "chop", "MEAN_REVERTING_CHOP": "chop",
+        "HIGH_CORRELATION_RISK": "chop", "PANIC_LIQUIDATION": "bear",
+        "LIQUIDITY_VACUUM": "bear",
+    }
+    return regime_map.get(regime, "chop"), []
 
 
 def _get_fee_rates() -> tuple:
@@ -199,17 +140,14 @@ def _current_maker_fee() -> float:
 
 
 def _calc_confidence_score(signals: dict, regime: str, adx: float) -> float:
-    """Score 0-1 ponderado por regime. Ajusta tamanho da posição."""
+    """Score V3 legado — retorna score V4 se disponível, fallback por pesos."""
+    v4_score = state.get("v4", {}).get("BTC-USD", {}).get("score")
+    if v4_score is not None:
+        return v4_score
     weights = STRATEGY_WEIGHTS.get(regime, STRATEGY_WEIGHTS["neutral"])
     max_w   = sum(weights.values()) or 1.0
     buy_score = sum(weights.get(s, 1.0) for s, sig in signals.items() if sig == "BUY")
-    normalized = buy_score / max_w
-    if regime == "trending" and adx > 20:
-        normalized = min(1.0, normalized * (1 + min(0.25, (adx - 20) / 80)))
-    return normalized
-
-
-# _dynamic_sl removida na Fase 3 — SL agora = ATR × 2 clampado em PAIR_SL_RANGE.
+    return buy_score / max_w
 
 
 def _load_history() -> list:
@@ -269,40 +207,6 @@ CANDLE_1D         = "ONE_DAY"        # Trend, VolGuard
 TRADE_PCT          = 0.10   # 10% do portfolio por trade — reduzido para diminuir taxas e risco
 
 
-def _calculate_dynamic_position_size(pair: str, candles: list, base_pct: float = None) -> float:
-    """Calcula tamanho de posição dinamicamente baseado em volatilidade.
-
-    Alta volatilidade → posição menor (2%)
-    Baixa volatilidade → posição maior (até 10%)
-    """
-    if base_pct is None:
-        base_pct = TRADE_PCT
-
-    if len(candles) < 20:
-        return base_pct  # Fallback ao base
-
-    df = pd.DataFrame(candles, columns=["start", "low", "high", "open", "close", "volume"])
-    df["close"] = df["close"].astype(float)
-    df["high"] = df["high"].astype(float)
-    df["low"] = df["low"].astype(float)
-
-    # Calcular ATR (Average True Range)
-    df["tr"] = df["high"] - df["low"]
-    atr_current = df["tr"].iloc[-1]
-    atr_avg = df["tr"].tail(14).mean()
-
-    # Ratio de volatilidade (inverso: mais vol = posição menor)
-    if atr_current > 0:
-        vol_ratio = atr_avg / atr_current
-    else:
-        vol_ratio = 1.0
-
-    # Aplicar ratio com limites (2% mín, TRADE_PCT máx)
-    size = base_pct * vol_ratio
-    size = max(0.02, min(TRADE_PCT, size))
-
-    return size
-
 
 # ── Gestão de risco (Fase 3 — sistema unificado ATR-based) ───────
 # SL = ATR × 2, clampado entre min e max por ativo
@@ -347,14 +251,12 @@ SCORE_SIZE_BOOST    = 1.4    # score 85%+ → tamanho +40%
 # ── Classificação de pares ───────────────────────────────────────
 ALT_PAIRS = {"SOL-USD"}
 BTC_PAIRS  = {"BTC-USD", "ETH-USD"}
-# PAIR_TRAILING e PAIR_BREAKEVEN removidos na Fase 3 —
-# substituídos pela regra unificada ATR-based em _calc_exit()
-SL_COOLDOWN_CYCLES    = 3     # SL normal: 3h = 3 ciclos de 1h
+SL_COOLDOWN_CYCLES    = 3
 
 # ── Circuit breaker + controles de risco ─────────────────────────
-MAX_DAILY_TRADES      = 10    # máximo de trades por dia (BUY+SELL)
-MAX_OPEN_SLOTS        = 4     # máximo de slots abertos simultaneamente
-BUY_COOLDOWN_SECONDS  = 7200   # 2h entre BUYs no mesmo par/estratégia (Fase 4)
+MAX_DAILY_TRADES      = 10
+MAX_OPEN_SLOTS        = 4
+BUY_COOLDOWN_SECONDS  = 7200
 _daily_trade_count: dict = {}  # {"YYYY-MM-DD": count}
 last_buy_time:      dict = {}  # {f"{strat}:{pair}": timestamp}
 
