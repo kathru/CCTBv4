@@ -768,7 +768,6 @@ async def reset_portfolio(token: str = "", brl: float = 0.0):
     last_signals.clear()
     _daily_trade_count.clear()
     last_buy_time.clear()
-    pending_orders.clear()       # cancela limit orders pendentes no reset
 
     _update_portfolio_state()
     await broadcast(state)
@@ -1201,11 +1200,7 @@ async def trading_loop():
         state["next_news_event"] = {
             "name": _nxt["name"], "mins_to": _nxt["mins_to"]
         } if _nxt else None
-        state["pending_limit_orders"] = {
-            k: {"limit_price": v["limit_price"], "trade_usd": v["trade_usd"],
-                "expires_in_min": max(0, int((v["expires_at"] - time.time()) / 60))}
-            for k, v in pending_orders.items()
-        }
+        state["pending_limit_orders"] = {}
 
         # Expõe timestamp da próxima hora cheia SP para o countdown do frontend
         _next_sp = _seconds_to_next_sp_hour()
