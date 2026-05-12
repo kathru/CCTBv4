@@ -92,7 +92,7 @@ class MarketBreadthSnapshot:
 
     def should_block_alts(self) -> bool:
         """True se as condições de breadth recomendam evitar alts."""
-        return self.score < 0.40 or self.btc_dominance > 0.60
+        return self.score < 0.40 or self.btc_dominance > 0.70
 
     def to_dict(self) -> dict:
         return {
@@ -133,6 +133,9 @@ def calc_alts_above_ema50(candles_by_pair: Dict[str, list]) -> Tuple[float, int]
     above = 0
 
     for pair, candles in candles_by_pair.items():
+        # BTC não é alt — exclui da contagem de amplitude de altcoins
+        if pair in ("BTC-USD", "BTC-USDT"):
+            continue
         if not candles or len(candles) < 55:
             continue
         try:
@@ -280,16 +283,18 @@ def _compute_score(snap: MarketBreadthSnapshot) -> Tuple[float, str]:
     score += snap.alts_above_ema50_pct * 0.35
 
     # ── 2. BTC Dominance (25%) ────────────────────────────────────────
-    # dom < 45% = risco-on (alts fluindo) = 1.0
-    # dom 45-55% = neutro = 0.5
-    # dom > 60% = risco-off = 0.0
+    # Calibrado para o ciclo 2024-2026 onde dominância estrutural é 55-65%.
+    # dom < 50% = risco-on forte (capital fluindo para alts) = 1.0
+    # dom 50-62% = zona neutra/normal = 0.75 → 0.40
+    # dom 62-70% = risco-off crescente = 0.40 → 0.10
+    # dom > 70% = fuga para BTC = 0.0
     dom = snap.btc_dominance
-    if dom <= 0.45:
+    if dom <= 0.50:
         dom_score = 1.0
-    elif dom <= 0.55:
-        dom_score = 1.0 - (dom - 0.45) / 0.10  # linear 45-55%
-    elif dom <= 0.65:
-        dom_score = 0.5 - (dom - 0.55) / 0.10 * 0.5
+    elif dom <= 0.62:
+        dom_score = 1.0 - (dom - 0.50) / 0.12 * 0.60   # 1.0 → 0.40
+    elif dom <= 0.70:
+        dom_score = 0.40 - (dom - 0.62) / 0.08 * 0.30  # 0.40 → 0.10
     else:
         dom_score = 0.0
     score += dom_score * 0.25
