@@ -749,15 +749,15 @@
       <div id="sltp-${c.sym}" class="hidden">
         <div class="grid grid-cols-3 gap-1 text-[10px]">
           <div class="bg-red-500/10 border border-red-500/20 rounded px-2 py-1 text-center">
-            <p class="text-red-400 text-[8px] mb-0.5">SL</p>
+            <p id="sl-lbl-${c.sym}" class="text-red-400 text-[8px] mb-0.5">SL</p>
             <p id="sl-${c.sym}" class="text-red-300 font-mono font-bold">—</p>
           </div>
           <div class="bg-orange-500/10 border border-orange-500/20 rounded px-2 py-1 text-center">
-            <p class="text-orange-400 text-[8px] mb-0.5">ATR SL</p>
+            <p id="atr-sl-lbl-${c.sym}" class="text-orange-400 text-[8px] mb-0.5">ATR SL</p>
             <p id="atr-sl-${c.sym}" class="text-orange-300 font-mono font-bold">—</p>
           </div>
           <div class="bg-green-500/10 border border-green-500/20 rounded px-2 py-1 text-center">
-            <p class="text-green-400 text-[8px] mb-0.5">TP</p>
+            <p id="tp-lbl-${c.sym}" class="text-green-400 text-[8px] mb-0.5">TP</p>
             <p id="tp-${c.sym}" class="text-green-300 font-mono font-bold">—</p>
           </div>
         </div>
@@ -952,9 +952,28 @@
         const hasPos = qty > 0 && sig && sig.entry_price;
         sltpEl.classList.toggle('hidden', !hasPos);
         if (hasPos) {
-          document.getElementById('sl-'     + c.sym).textContent = sig.atr_sl_level ? 'R$ ' + fmtBRL(sig.atr_sl_level * usdBrl * 0.97) : '—';
-          document.getElementById('atr-sl-' + c.sym).textContent = sig.atr_sl_level ? 'R$ ' + fmtBRL(sig.atr_sl_level * usdBrl) : '—';
-          document.getElementById('tp-'     + c.sym).textContent = sig.atr_sl_pct   ? 'R$ ' + fmtBRL(sig.entry_price * (1 + sig.atr_sl_pct * 2 / 100) * usdBrl) : '—';
+          const ep       = sig.entry_price;
+          const atrSl    = sig.atr_sl_level;
+          const atrSlPct = sig.atr_sl_pct;
+          const slPrice  = atrSl ? atrSl * 0.97 : null;
+          const tpPrice  = atrSlPct ? ep * (1 + atrSlPct * 2 / 100) : null;
+
+          // Percentuais em relação ao preço de entrada
+          const slPct    = slPrice  && ep ? ((slPrice  - ep) / ep * 100) : null;
+          const atrSlPct2= atrSl    && ep ? ((atrSl    - ep) / ep * 100) : null;
+          const tpPct    = tpPrice  && ep ? ((tpPrice  - ep) / ep * 100) : null;
+
+          document.getElementById('sl-'     + c.sym).textContent = slPrice  ? 'R$ ' + fmtBRL(slPrice  * usdBrl) : '—';
+          document.getElementById('atr-sl-' + c.sym).textContent = atrSl    ? 'R$ ' + fmtBRL(atrSl    * usdBrl) : '—';
+          document.getElementById('tp-'     + c.sym).textContent = tpPrice  ? 'R$ ' + fmtBRL(tpPrice  * usdBrl) : '—';
+
+          // Labels com percentual
+          const slLbl    = document.getElementById('sl-lbl-'     + c.sym);
+          const atrSlLbl = document.getElementById('atr-sl-lbl-' + c.sym);
+          const tpLbl    = document.getElementById('tp-lbl-'     + c.sym);
+          if (slLbl)    slLbl.textContent    = slPct    != null ? `SL (${slPct.toFixed(1)}%)`       : 'SL';
+          if (atrSlLbl) atrSlLbl.textContent = atrSlPct2!= null ? `ATR SL (${atrSlPct2.toFixed(1)}%)` : 'ATR SL';
+          if (tpLbl)    tpLbl.textContent    = tpPct    != null ? `TP (+${tpPct.toFixed(1)}%)`      : 'TP';
           const chgEl2 = document.getElementById('chg-entry-' + c.sym);
           if (chgEl2) {
             const chgPct = sig.change_pct || 0;
