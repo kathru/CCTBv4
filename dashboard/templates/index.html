@@ -382,100 +382,6 @@
       </div>
     </div>
 
-    <!-- ── Gráfico de Candles ── -->
-    <div class="card p-5">
-      <div class="mb-4">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="font-semibold text-white">Gráfico de Monitoramento</h3>
-          <span id="candle-price" class="font-mono text-white text-sm font-bold">—</span>
-        </div>
-        <div class="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-none">
-          <div class="flex gap-1 shrink-0">
-            <button onclick="setCandlePair('BTC-USD')" data-pair="BTC-USD" class="candle-pair-btn active px-3 py-1 rounded text-xs font-semibold">BTC</button>
-            <button onclick="setCandlePair('ETH-USD')" data-pair="ETH-USD" class="candle-pair-btn px-3 py-1 rounded text-xs font-semibold">ETH</button>
-            <button onclick="setCandlePair('SOL-USD')" data-pair="SOL-USD" class="candle-pair-btn px-3 py-1 rounded text-xs font-semibold">SOL</button>
-          </div>
-          <span class="text-gray-700 shrink-0">|</span>
-          <div class="flex gap-1 shrink-0">
-            <button onclick="setCandleTF('ONE_MINUTE',1)"      data-tf="ONE_MINUTE"     class="candle-tf-btn px-2.5 py-1 rounded text-xs font-semibold">1m</button>
-            <button onclick="setCandleTF('FIVE_MINUTE',5)"     data-tf="FIVE_MINUTE"    class="candle-tf-btn px-2.5 py-1 rounded text-xs font-semibold">5m</button>
-            <button onclick="setCandleTF('FIFTEEN_MINUTE',15)" data-tf="FIFTEEN_MINUTE" class="candle-tf-btn px-2.5 py-1 rounded text-xs font-semibold">15m</button>
-            <button onclick="setCandleTF('ONE_HOUR',60)"      data-tf="ONE_HOUR"       class="candle-tf-btn active px-2.5 py-1 rounded text-xs font-semibold">1h</button>
-            <button onclick="setCandleTF('SIX_HOUR',360)"     data-tf="SIX_HOUR"       class="candle-tf-btn px-2.5 py-1 rounded text-xs font-semibold">6h</button>
-            <button onclick="setCandleTF('ONE_DAY',1440)"     data-tf="ONE_DAY"        class="candle-tf-btn px-2.5 py-1 rounded text-xs font-semibold">1d</button>
-          </div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px;">
-        <span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;">Candle · Preço</span>
-        <span style="font-size:9px;color:#4b5563;">— EMA9·21·50 | Donchian 20 | Bollinger (20,2) | Orderflow | ADX Regime V4</span>
-      </div>
-      <div id="candle-chart" style="overflow:hidden;"></div>
-      <div class="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-2 text-[10px] text-gray-500">
-
-        <!-- 1. Candle / Preço -->
-        <div class="flex flex-col gap-0.5">
-          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">Candle · Preço</p>
-          <span><span style="color:#06b6d4">—</span> EMA9</span>
-          <span><span style="color:#818cf8">—</span> EMA21</span>
-          <span><span style="color:#c084fc">—</span> EMA50</span>
-          <span><span style="color:rgba(249,115,22,0.8)">- -</span> Donchian 20 (1H)</span>
-          <span><span style="color:rgba(99,102,241,0.6)">···</span> Bollinger (20,2)</span>
-          <span><span style="color:rgba(74,222,128,0.5)">▮</span> Vol ↑ / <span style="color:rgba(248,113,113,0.5)">▮</span> Vol ↓</span>
-        </div>
-
-        <!-- 2. Orderflow -->
-        <div class="flex flex-col gap-0.5">
-          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">Orderflow Proxy</p>
-          <span><span style="color:#3b82f6">—</span> Taker Buy Ratio</span>
-          <span><span style="color:#f87171">—</span> Taker Sell Ratio</span>
-          <span><span style="color:rgba(74,222,128,0.7)">▮</span> Volume Delta +</span>
-          <span><span style="color:rgba(156,163,175,0.4)">—</span> Neutro</span>
-          <span class="text-gray-600 mt-0.5">Imbalance &gt;15% = sinal</span>
-        </div>
-
-        <!-- 3. Realized Vol -->
-        <div class="flex flex-col gap-0.5">
-          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">Volatilidade</p>
-          <span><span style="color:#facc15">—</span> Realized Vol (anual)</span>
-          <span><span style="color:rgba(248,113,113,0.5)">- -</span> Percentil 80%+</span>
-          <span><span style="color:rgba(74,222,128,0.5)">- -</span> Zona saudável</span>
-          <span><span style="color:rgba(156,163,175,0.25)">—</span> Compressão</span>
-          <span class="text-gray-600 mt-0.5">Vol Expansion Model</span>
-        </div>
-
-        <!-- 4. Funding / OI -->
-        <div class="flex flex-col gap-0.5">
-          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">Funding / OI</p>
-          <span><span style="color:#38bdf8">—</span> Funding Rate (perp)</span>
-          <span class="text-gray-600">+0.05% = bullish excess</span>
-          <span class="text-gray-600">-0.02% = bearish excess</span>
-          <span class="text-gray-600 mt-0.5">OI expand = novo dinheiro</span>
-        </div>
-
-        <!-- 5. ADX -->
-        <div class="flex flex-col gap-0.5">
-          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">ADX (14) — Regime</p>
-          <span><span style="color:#e879f9">—</span> ADX (força)</span>
-          <span><span style="color:rgba(74,222,128,0.6)">- -</span> 30 → TREND_EXPANSION</span>
-          <span><span style="color:rgba(250,204,21,0.6)">- -</span> 20 → CHOP</span>
-          <span class="text-gray-600 mt-0.5">7 regimes — V4 Engine</span>
-          <span class="text-gray-600">Probabilístico, não binário</span>
-        </div>
-
-        <!-- 6. Market Structure -->
-        <div class="flex flex-col gap-0.5">
-          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">Market Structure</p>
-          <span><span style="color:#a78bfa">▲</span> Higher High / HL</span>
-          <span><span style="color:rgba(74,222,128,0.6)">⊙</span> Liquidity Sweep</span>
-          <span><span style="color:rgba(248,113,113,0.4)">✕</span> Failed Breakout</span>
-          <span class="text-gray-600 mt-0.5">Displacement candle</span>
-          <span class="text-gray-600">Peso: 20% no score V4</span>
-        </div>
-
-      </div>
-    </div>
-
     <!-- ── Evolução + Distribuição ── -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <div class="card p-5 lg:col-span-2">
@@ -677,6 +583,86 @@
       </div>
     </div>
 
+    <!-- ── Gráficos de Monitoramento ── -->
+    <div class="card p-5">
+      <div class="mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-white">Gráficos de Monitoramento</h3>
+          <span id="candle-price" class="font-mono text-white text-sm font-bold">—</span>
+        </div>
+        <div class="flex items-center gap-3 overflow-x-auto pb-1 scrollbar-none">
+          <div class="flex gap-1 shrink-0">
+            <button onclick="setCandlePair('BTC-USD')" data-pair="BTC-USD" class="candle-pair-btn active px-3 py-1 rounded text-xs font-semibold">BTC</button>
+            <button onclick="setCandlePair('ETH-USD')" data-pair="ETH-USD" class="candle-pair-btn px-3 py-1 rounded text-xs font-semibold">ETH</button>
+            <button onclick="setCandlePair('SOL-USD')" data-pair="SOL-USD" class="candle-pair-btn px-3 py-1 rounded text-xs font-semibold">SOL</button>
+          </div>
+          <span class="text-gray-700 shrink-0">|</span>
+          <div class="flex gap-1 shrink-0">
+            <button onclick="setCandleTF('ONE_MINUTE',1)"      data-tf="ONE_MINUTE"     class="candle-tf-btn px-2.5 py-1 rounded text-xs font-semibold">1m</button>
+            <button onclick="setCandleTF('FIVE_MINUTE',5)"     data-tf="FIVE_MINUTE"    class="candle-tf-btn px-2.5 py-1 rounded text-xs font-semibold">5m</button>
+            <button onclick="setCandleTF('FIFTEEN_MINUTE',15)" data-tf="FIFTEEN_MINUTE" class="candle-tf-btn px-2.5 py-1 rounded text-xs font-semibold">15m</button>
+            <button onclick="setCandleTF('ONE_HOUR',60)"      data-tf="ONE_HOUR"       class="candle-tf-btn active px-2.5 py-1 rounded text-xs font-semibold">1h</button>
+            <button onclick="setCandleTF('SIX_HOUR',360)"     data-tf="SIX_HOUR"       class="candle-tf-btn px-2.5 py-1 rounded text-xs font-semibold">6h</button>
+            <button onclick="setCandleTF('ONE_DAY',1440)"     data-tf="ONE_DAY"        class="candle-tf-btn px-2.5 py-1 rounded text-xs font-semibold">1d</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px;">
+        <span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;">Candle · Preço</span>
+        <span style="font-size:9px;color:#4b5563;">— EMA9·21·50 | Donchian 20 | Bollinger (20,2) | Orderflow | ADX Regime V4</span>
+      </div>
+      <div id="candle-chart" style="overflow:hidden;"></div>
+      <div class="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-2 text-[10px] text-gray-500">
+        <div class="flex flex-col gap-0.5">
+          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">Candle · Preço</p>
+          <span><span style="color:#06b6d4">—</span> EMA9</span>
+          <span><span style="color:#818cf8">—</span> EMA21</span>
+          <span><span style="color:#c084fc">—</span> EMA50</span>
+          <span><span style="color:rgba(249,115,22,0.8)">- -</span> Donchian 20 (1H)</span>
+          <span><span style="color:rgba(99,102,241,0.6)">···</span> Bollinger (20,2)</span>
+          <span><span style="color:rgba(74,222,128,0.5)">▮</span> Vol ↑ / <span style="color:rgba(248,113,113,0.5)">▮</span> Vol ↓</span>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">Orderflow Proxy</p>
+          <span><span style="color:#3b82f6">—</span> Taker Buy Ratio</span>
+          <span><span style="color:#f87171">—</span> Taker Sell Ratio</span>
+          <span><span style="color:rgba(74,222,128,0.7)">▮</span> Volume Delta +</span>
+          <span><span style="color:rgba(156,163,175,0.4)">—</span> Neutro</span>
+          <span class="text-gray-600 mt-0.5">Imbalance &gt;15% = sinal</span>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">Volatilidade</p>
+          <span><span style="color:#facc15">—</span> Realized Vol (anual)</span>
+          <span><span style="color:rgba(248,113,113,0.5)">- -</span> Percentil 80%+</span>
+          <span><span style="color:rgba(74,222,128,0.5)">- -</span> Zona saudável</span>
+          <span><span style="color:rgba(156,163,175,0.25)">—</span> Compressão</span>
+          <span class="text-gray-600 mt-0.5">Vol Expansion Model</span>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">Funding / OI</p>
+          <span><span style="color:#38bdf8">—</span> Funding Rate (perp)</span>
+          <span class="text-gray-600">+0.05% = bullish excess</span>
+          <span class="text-gray-600">-0.02% = bearish excess</span>
+          <span class="text-gray-600 mt-0.5">OI expand = novo dinheiro</span>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">ADX (14) — Regime</p>
+          <span><span style="color:#e879f9">—</span> ADX (força)</span>
+          <span><span style="color:rgba(74,222,128,0.6)">- -</span> 30 → TREND_EXPANSION</span>
+          <span><span style="color:rgba(250,204,21,0.6)">- -</span> 20 → CHOP</span>
+          <span class="text-gray-600 mt-0.5">7 regimes — V4 Engine</span>
+          <span class="text-gray-600">Probabilístico, não binário</span>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">Market Structure</p>
+          <span><span style="color:#a78bfa">▲</span> Higher High / HL</span>
+          <span><span style="color:rgba(74,222,128,0.6)">⊙</span> Liquidity Sweep</span>
+          <span><span style="color:rgba(248,113,113,0.4)">✕</span> Failed Breakout</span>
+          <span class="text-gray-600 mt-0.5">Displacement candle</span>
+          <span class="text-gray-600">Peso: 20% no score V4</span>
+        </div>
+      </div>
+    </div>
 
   </main>
 
