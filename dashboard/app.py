@@ -344,8 +344,6 @@ strategy_slots = _load_slots()
 def _save_manual(s): _save_slots(s)
 
 # ── P&L por estratégia (atribuição proporcional) ─────────────────
-STRAT_PNL_FILE = os.path.join(os.path.dirname(os.path.dirname(
-    os.path.abspath(__file__))), "data", "strategy_pnl.json")
 
 last_signals: dict = {}
 
@@ -597,7 +595,7 @@ state = {
     "cycle_interval": CYCLE_INTERVAL,
     "usd_brl":          5.70,
     "trade_amount_brl": 0.0,
-    "strategy_pnl":     strategy_pnl,
+    "strategy_pnl":     {},
     "fear_greed":       {"value": 50, "label": "Neutral"},
     "kpis":             _calculate_kpis(),  # Métricas de performance
     # ── Campos de controle — inicializados para evitar undefined no frontend ──
@@ -757,11 +755,7 @@ async def reset_portfolio(token: str = "", brl: float = 0.0):
     _save_slots(strategy_slots)
     state["slots"] = strategy_slots
 
-    # ── Reinicia P&L por estratégia ──────────────────────────────
-    for name in strategy_pnl:
-        strategy_pnl[name] = {"realized": 0.0, "trades": 0, "buys": 0, "sells": 0}
-    _save_strategy_pnl(strategy_pnl)
-    state["strategy_pnl"] = strategy_pnl
+    state["strategy_pnl"] = {}
 
     # ── Reinicia histórico e feed ─────────────────────────────────
     state["history"] = []
@@ -1172,21 +1166,16 @@ async def trading_loop():
                 state["scores"][pair] = round(pair_score, 3)
 
                 state["signals"][pair] = {
-                    "strategies":  pair_signals,
-                    "trend":       trend,
-                    "vol_guard":   vol_signal,
-                    "rsi":         rsi_val,
-                    "entry_price": round(entry_price, 2) if entry_price else None,
-                    "change_pct":  round(change_pct,  2) if change_pct is not None else None,
-                    "sl_level":    round(entry_price * (1 - (_atr_sl_pct or 5.0) / 100), 2) if entry_price else None,
-                    "tp_level":    round(entry_price * (1 + (_atr_sl_pct or 5.0) * 2 / 100), 2) if entry_price else None,
+                    "strategies":   pair_signals,
+                    "rsi":          rsi_val,
+                    "entry_price":  round(entry_price, 2) if entry_price else None,
+                    "change_pct":   round(change_pct,  2) if change_pct is not None else None,
                     "atr_sl_level": _atr_sl_level,
                     "atr_sl_pct":   _atr_sl_pct,
-                    "mtf_ok":       donchian_6h_confirmed,
                     "score":        round(pair_score, 3),
-                    "adx":          round(_adx_val, 1),
+                    "regime":       state.get("v4", {}).get(pair, {}).get("regime", "UNKNOWN"),
                 }
-                log_cycle(logger, state["cycle"], pair, price, pair_signals, trend)
+                log_cycle(logger, state["cycle"], pair, price, pair_signals, "")
 
             except Exception as e:
                 logger.error(f"[{pair}] Erro: {e}")
