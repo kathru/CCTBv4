@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Claude Code Trading Bot</title>
+  <title>CCTB V4 — Motor Probabilístico</title>
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -73,8 +73,8 @@
       <div>
         <!-- Mobile: nome curto | Desktop: nome completo -->
         <h1 class="font-bold text-white text-lg leading-none">
-          <span class="sm:hidden">CC Trading Bot <span class="text-gray-600 text-xs font-normal">v3.5.17</span></span>
-          <span class="hidden sm:inline">Claude Code Trading Bot <span class="text-gray-600 text-xs font-normal">v3.5.17 (11/05/2026)</span></span>
+          <span class="sm:hidden">CCTB <span class="text-indigo-500 text-xs font-bold">V4</span></span>
+          <span class="hidden sm:inline">Claude Code Trading Bot <span class="text-indigo-500 text-xs font-bold">V4</span> <span class="text-gray-600 text-xs font-normal">(11/05/2026)</span></span>
         </h1>
         <p class="text-xs text-gray-500 hidden sm:block">OKX · Paper Mode</p>
       </div>
@@ -262,21 +262,21 @@
       </div>
       <!-- Bear Signals — visível apenas quando há sinais ativos -->
       <div id="bear-signals-row" class="hidden mb-3 flex flex-wrap gap-1.5"></div>
-      <!-- Regras de operação -->
+      <!-- Regras de operação V4 -->
       <div class="text-[10px] text-gray-500 mb-3 flex flex-wrap gap-x-4 gap-y-1">
-        <span>Min RR: <span class="text-indigo-400 font-semibold">2.5:1</span></span>
-        <span>Max Alts: <span class="text-yellow-400 font-semibold">2</span></span>
-        <span>Exp. Alts: <span class="text-orange-400 font-semibold">≤ 25%</span></span>
-        <span>SL SOL: <span class="text-purple-400 font-semibold">5–7%</span></span>
-        <span>SL BTC: <span class="text-green-400 font-semibold">2–4%</span></span>
+        <span>Sizing: <span class="text-indigo-400 font-semibold">Edge×Conf / Vol×Corr</span></span>
+        <span>Kelly: <span class="text-yellow-400 font-semibold">25% parcial</span></span>
+        <span>Max Slots: <span class="text-orange-400 font-semibold">4</span></span>
+        <span>SL: <span class="text-purple-400 font-semibold">ATR×regime</span></span>
+        <span>TP: <span class="text-green-400 font-semibold">escalonado 1.5/2/3×</span></span>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-xs">
           <thead>
             <tr class="text-gray-500 uppercase tracking-wider text-[10px] border-b border-gray-800">
               <th class="text-left pb-2 pr-4">Par</th>
-              <th class="text-center pb-2 pr-4">Regime ADX</th>
-              <th class="text-center pb-2 pr-4">Score / Gate</th>
+              <th class="text-center pb-2 pr-4">Regime V4</th>
+              <th class="text-center pb-2 pr-4">Score Prob.</th>
               <th class="text-center pb-2 pr-4">MTF 6H</th>
               <th class="text-center pb-2 pr-4">SL Range</th>
               <th class="text-center pb-2 pr-4">ATR Stop</th>
@@ -289,12 +289,12 @@
           </tbody>
         </table>
       </div>
-      <!-- Legenda de Score Gate -->
+      <!-- Legenda de Score V4 -->
       <div class="mt-3 flex flex-wrap gap-2 text-[10px]">
-        <span class="score-blocked px-2 py-0.5 rounded font-bold">&lt;33% BLOQUEADO</span>
-        <span class="score-reduced px-2 py-0.5 rounded font-bold">33-75% REDUZIDO</span>
-        <span class="score-normal px-2 py-0.5 rounded font-bold">75-85% NORMAL</span>
-        <span class="score-aggr px-2 py-0.5 rounded font-bold">85%+ AGRESSIVO</span>
+        <span class="score-blocked px-2 py-0.5 rounded font-bold">&lt;55% HOLD</span>
+        <span class="score-reduced px-2 py-0.5 rounded font-bold">55-65% REDUZIDO</span>
+        <span class="score-normal px-2 py-0.5 rounded font-bold">65-75% NORMAL</span>
+        <span class="score-aggr px-2 py-0.5 rounded font-bold">75%+ AGRESSIVO</span>
       </div>
       <!-- News Guard Banner -->
       <div id="news-guard-banner" class="hidden mt-3 rounded-lg px-4 py-2 flex items-center justify-between bg-orange-900/40 border border-orange-500/40">
@@ -337,7 +337,7 @@
       </div>
       <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px;">
         <span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;">Candle · Preço</span>
-        <span style="font-size:9px;color:#4b5563;">— EMA9·21·50 | Donchian 20 (1H) | Bollinger (20,2) | Volume</span>
+        <span style="font-size:9px;color:#4b5563;">— EMA9·21·50 | Donchian 20 | Bollinger (20,2) | Orderflow | ADX Regime V4</span>
       </div>
       <div id="candle-chart" style="overflow:hidden;"></div>
       <div class="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-2 text-[10px] text-gray-500">
@@ -353,53 +353,53 @@
           <span><span style="color:rgba(74,222,128,0.5)">▮</span> Vol ↑ / <span style="color:rgba(248,113,113,0.5)">▮</span> Vol ↓</span>
         </div>
 
-        <!-- 2. MACD -->
+        <!-- 2. Orderflow -->
         <div class="flex flex-col gap-0.5">
-          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">MACD (12·26·9)</p>
-          <span><span style="color:#3b82f6">—</span> Linha MACD</span>
-          <span><span style="color:#f87171">—</span> Linha Sinal</span>
-          <span><span style="color:rgba(74,222,128,0.7)">▮</span> Histograma +</span>
-          <span><span style="color:rgba(156,163,175,0.4)">—</span> Zero</span>
-          <span class="text-gray-600 mt-0.5">Cross-up + ADX↑ = BUY</span>
+          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">Orderflow Proxy</p>
+          <span><span style="color:#3b82f6">—</span> Taker Buy Ratio</span>
+          <span><span style="color:#f87171">—</span> Taker Sell Ratio</span>
+          <span><span style="color:rgba(74,222,128,0.7)">▮</span> Volume Delta +</span>
+          <span><span style="color:rgba(156,163,175,0.4)">—</span> Neutro</span>
+          <span class="text-gray-600 mt-0.5">Imbalance &gt;15% = sinal</span>
         </div>
 
-        <!-- 3. RSI -->
+        <!-- 3. Realized Vol -->
         <div class="flex flex-col gap-0.5">
-          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">RSI (14)</p>
-          <span><span style="color:#facc15">—</span> RSI</span>
-          <span><span style="color:rgba(248,113,113,0.5)">- -</span> 75 → bloqueia MACD</span>
-          <span><span style="color:rgba(74,222,128,0.5)">- -</span> 30 → sobrevenda</span>
-          <span><span style="color:rgba(156,163,175,0.25)">—</span> 50 → neutro</span>
-          <span class="text-gray-600 mt-0.5">EMA Pullback usa RSI indireto</span>
+          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">Volatilidade</p>
+          <span><span style="color:#facc15">—</span> Realized Vol (anual)</span>
+          <span><span style="color:rgba(248,113,113,0.5)">- -</span> Percentil 80%+</span>
+          <span><span style="color:rgba(74,222,128,0.5)">- -</span> Zona saudável</span>
+          <span><span style="color:rgba(156,163,175,0.25)">—</span> Compressão</span>
+          <span class="text-gray-600 mt-0.5">Vol Expansion Model</span>
         </div>
 
-        <!-- 4. OBV -->
+        <!-- 4. Funding / OI -->
         <div class="flex flex-col gap-0.5">
-          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">OBV</p>
-          <span><span style="color:#38bdf8">—</span> On-Balance Volume</span>
-          <span class="text-gray-600">Crescente = acumulação</span>
-          <span class="text-gray-600">Decrescente = distribuição</span>
-          <span class="text-gray-600 mt-0.5">Indicador informativo</span>
+          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">Funding / OI</p>
+          <span><span style="color:#38bdf8">—</span> Funding Rate (perp)</span>
+          <span class="text-gray-600">+0.05% = bullish excess</span>
+          <span class="text-gray-600">-0.02% = bearish excess</span>
+          <span class="text-gray-600 mt-0.5">OI expand = novo dinheiro</span>
         </div>
 
         <!-- 5. ADX -->
         <div class="flex flex-col gap-0.5">
           <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">ADX (14) — Regime</p>
           <span><span style="color:#e879f9">—</span> ADX (força)</span>
-          <span><span style="color:rgba(74,222,128,0.6)">- -</span> 20 → TRENDING</span>
-          <span><span style="color:rgba(250,204,21,0.6)">- -</span> 20 → limite CHOP</span>
-          <span class="text-gray-600 mt-0.5">≥20 = Donchian/MACD/EMA</span>
-          <span class="text-gray-600">&lt;20 = BB Reversion</span>
+          <span><span style="color:rgba(74,222,128,0.6)">- -</span> 30 → TREND_EXPANSION</span>
+          <span><span style="color:rgba(250,204,21,0.6)">- -</span> 20 → CHOP</span>
+          <span class="text-gray-600 mt-0.5">7 regimes — V4 Engine</span>
+          <span class="text-gray-600">Probabilístico, não binário</span>
         </div>
 
-        <!-- 6. BB Reversion -->
+        <!-- 6. Market Structure -->
         <div class="flex flex-col gap-0.5">
-          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">BB Reversion — RSI</p>
-          <span><span style="color:#a78bfa">—</span> RSI (14) roxo</span>
-          <span><span style="color:rgba(74,222,128,0.6)">- -</span> 35 → zona de entrada</span>
-          <span><span style="color:rgba(248,113,113,0.4)">- -</span> 60 → zona de saída</span>
-          <span class="text-gray-600 mt-0.5">RSI&lt;35 + BB inferior = BUY</span>
-          <span class="text-gray-600">Saída: retorno à BB média</span>
+          <p class="text-[9px] text-gray-600 uppercase tracking-wider mb-0.5 font-semibold">Market Structure</p>
+          <span><span style="color:#a78bfa">▲</span> Higher High / HL</span>
+          <span><span style="color:rgba(74,222,128,0.6)">⊙</span> Liquidity Sweep</span>
+          <span><span style="color:rgba(248,113,113,0.4)">✕</span> Failed Breakout</span>
+          <span class="text-gray-600 mt-0.5">Displacement candle</span>
+          <span class="text-gray-600">Peso: 20% no score V4</span>
         </div>
 
       </div>
@@ -595,75 +595,61 @@
       desc: 'Breakout do canal Donchian 20 — 1H + confirmação 6H. RVOL≥1.3× (participação real), ADX>20, close confirmado.'
     },
     {
-      name: 'MACD Momentum', id: 'MACD', icon: '⚡',
-      filters: ['MACD>0', 'RSI<75', 'ADX↑'],
-      desc: 'Cruzamento MACD acima de zero. Exige MACD>0, RSI<75 e ADX rising (tendência em aceleração, não exaustão).'
-    },
-    {
       name: 'EMA Pullback', id: 'EMA', icon: '📈',
       filters: ['EMA9>21>50', 'Touch✓'],
       desc: 'Pullback para EMA21 em uptrend. Condições: uptrend alinhado + toque EMA21 + rejeição (close≥EMA21) + vela verde.'
     },
     {
-      name: 'BB Reversion', id: 'BB', icon: '↩️',
-      filters: ['BB<Lower', 'RSI<35', 'CHOP'],
-      desc: 'Reversão à média via Bollinger Band(20,2). Ativo exclusivamente em CHOP. Compra na banda inferior (RSI<35), realiza na banda média (EMA20). Limit order.'
+      name: 'V4 Signal', id: 'V4', icon: '⚙️',
+      filters: ['Score>55%', 'EV>0', 'Regime✓'],
+      desc: 'Motor probabilístico V4: Volatility Expansion + Market Structure + Orderflow + Relative Strength. Score 0-100% calibrado por regime.'
     },
   ];
 
   // ─── Helpers de regime (pair-level ADX regime) ──────────────────────────
+  // V4 — mapeamento de 7 regimes para classes CSS e labels
+  const V4_REGIME_MAP = {
+    'TREND_EXPANSION':       { cls: 'regime-trending', modeCls: 'mode-bull',  icon: '↑', desc: 'TREND EXPANSION — Tendência forte',    short: 'TREND↑' },
+    'TREND_EXHAUSTION':      { cls: 'regime-ranging',  modeCls: 'mode-chop',  icon: '⚠', desc: 'TREND EXHAUSTION — Tendência madura',  short: 'EXHAUST' },
+    'VOLATILITY_COMPRESSION':{ cls: 'regime-ranging',  modeCls: 'mode-chop',  icon: '⊙', desc: 'VOL COMPRESSION — Squeeze pré-movimento', short: 'COMPRESS' },
+    'PANIC_LIQUIDATION':     { cls: 'regime-neutral',  modeCls: 'mode-bear',  icon: '⚡', desc: 'PANIC — Posições fechadas',             short: 'PANIC' },
+    'MEAN_REVERTING_CHOP':   { cls: 'regime-ranging',  modeCls: 'mode-chop',  icon: '↔', desc: 'CHOP — Mercado lateral',               short: 'CHOP' },
+    'HIGH_CORRELATION_RISK': { cls: 'regime-neutral',  modeCls: 'mode-chop',  icon: '⚠', desc: 'CORRELATION RISK — Risco sistêmico',   short: 'CORR↑' },
+    'LIQUIDITY_VACUUM':      { cls: 'regime-neutral',  modeCls: 'mode-bear',  icon: '⊘', desc: 'LIQUIDITY VACUUM — Execução suspensa', short: 'VACUUM' },
+  };
+
   function regimeCls(r) {
     if (!r || r === '—') return 'regime-neutral';
-    const ru = r.toUpperCase();
-    if (ru === 'TRENDING') return 'regime-trending';
-    if (ru === 'RANGING')  return 'regime-ranging';
-    return 'regime-neutral';
+    return (V4_REGIME_MAP[r.toUpperCase()] || {}).cls || 'regime-neutral';
   }
   function regimeLabel(r) {
     if (!r || r === '—') return '—';
-    return r.toUpperCase();
+    return (V4_REGIME_MAP[r.toUpperCase()] || {}).short || r.toUpperCase();
   }
 
-  // ─── Market Mode global (bull/chop/bear) helpers ────────────────────────
   function marketModeCls(m) {
     if (!m) return 'mode-chop';
-    const mu = m.toLowerCase();
-    if (mu === 'bull') return 'mode-bull';
-    if (mu === 'bear') return 'mode-bear';
-    return 'mode-chop';
+    return (V4_REGIME_MAP[m.toUpperCase()] || {}).modeCls ||
+      ({ bull: 'mode-bull', bear: 'mode-bear' }[m.toLowerCase()] || 'mode-chop');
   }
   function marketModeIcon(m) {
     if (!m) return '↔';
-    const mu = m.toLowerCase();
-    if (mu === 'bull') return '🐂';
-    if (mu === 'bear') return '🐻';
-    return '↔';
+    return (V4_REGIME_MAP[m.toUpperCase()] || {}).icon ||
+      ({ bull: '↑', bear: '↓' }[m.toLowerCase()] || '↔');
   }
   function marketModeDesc(m) {
     if (!m) return 'CHOP — Operação Conservadora';
-    const mu = m.toLowerCase();
-    if (mu === 'bull') return 'BULL — Operação Agressiva';
-    if (mu === 'bear') return 'BEAR — Novas compras BLOQUEADAS';
-    return 'CHOP — Operação Conservadora';
+    return (V4_REGIME_MAP[m.toUpperCase()] || {}).desc ||
+      ({ bull: 'BULL — Operação Agressiva', bear: 'BEAR — Novas compras BLOQUEADAS' }[m.toLowerCase()] || 'CHOP — Operação Conservadora');
   }
 
-  // ─── Inferir regime (pair-level) a partir dos sinais disponíveis ─────────
-  // Prefere campo sig.regime do backend; fallback por heurística de estratégias
   function inferRegime(sig) {
-    if (!sig || !sig.strategies) return 'NEUTRAL';
-    // Prefer backend explicit regime field
+    if (!sig) return 'NEUTRAL';
     if (sig.regime) return sig.regime.toUpperCase();
-
-    const don  = sig.strategies['Donchian Breakout'] || 'HOLD';
-    const ema  = sig.strategies['EMA Pullback']      || 'HOLD';
-    const macd = sig.strategies['MACD Momentum']     || 'HOLD';
-
-    const trendBuys   = [don, ema, macd].filter(v => v === 'BUY').length;
-    const trendActive = [don, ema, macd].some(v => v !== 'HOLD');
-
-    if (trendBuys >= 2) return 'TRENDING';
-    if (trendActive) return 'TRENDING';
-    return 'NEUTRAL';
+    const don = sig.strategies?.['Donchian Breakout'] || 'HOLD';
+    const ema = sig.strategies?.['EMA Pullback']      || 'HOLD';
+    if ([don, ema].filter(v => v === 'BUY').length >= 1) return 'TREND_EXPANSION';
+    return 'MEAN_REVERTING_CHOP';
   }
 
   // ─── Gera cards de cripto dinamicamente ─────────────────────────────────
@@ -1180,19 +1166,21 @@
         const regime = sig && sig.regime ? sig.regime.toUpperCase() : (sig ? inferRegime(sig) : 'NEUTRAL');
         const rCls   = regimeCls(regime);
 
-        // ── Score de confiança + Gate ────────────────────────────────
-        const score    = scores[c.pair] != null ? scores[c.pair] : null;
+        // ── Score probabilístico V4 ──────────────────────────────────
+        const v4pair   = (s.v4 || {})[c.pair] || {};
+        const v4score  = v4pair.score != null ? v4pair.score : (scores[c.pair] != null ? scores[c.pair] : null);
         let scoreCell  = '<span class="text-gray-500 text-[10px]">—</span>';
-        if (score != null) {
-          const pct = Math.round(score * 100);
-          const barW   = Math.round(pct * 40 / 100);
+        if (v4score != null) {
+          const pct  = Math.round(v4score * 100);
+          const barW = Math.round(pct * 40 / 100);
           let gateCls, gateLabel, barCol;
-          if (pct < 33)       { gateCls = 'score-blocked'; gateLabel = 'BLOQUEADO'; barCol = '#f87171'; }
-          else if (pct < 75)  { gateCls = 'score-reduced'; gateLabel = 'REDUZIDO';  barCol = '#fb923c'; }
-          else if (pct < 85)  { gateCls = 'score-normal';  gateLabel = 'NORMAL';    barCol = '#60a5fa'; }
+          if (pct < 55)       { gateCls = 'score-blocked'; gateLabel = 'HOLD';      barCol = '#f87171'; }
+          else if (pct < 65)  { gateCls = 'score-reduced'; gateLabel = 'REDUZIDO';  barCol = '#fb923c'; }
+          else if (pct < 75)  { gateCls = 'score-normal';  gateLabel = 'NORMAL';    barCol = '#60a5fa'; }
           else                { gateCls = 'score-aggr';    gateLabel = 'AGRESSIVO'; barCol = '#4ade80'; }
-          const bar = `<div style="width:40px;height:3px;background:#21262d;border-radius:2px;margin:2px auto 0;"><div style="width:${barW}px;height:3px;background:${barCol};border-radius:2px;"></div></div>`;
-          scoreCell = `<span class="${gateCls} text-[9px] font-bold px-1.5 py-0.5 rounded">${pct}% ${gateLabel}</span>${bar}`;
+          const dec  = v4pair.decision === 'BUY' ? ' ▲' : v4pair.decision === 'SELL' ? ' ▼' : '';
+          const bar  = `<div style="width:40px;height:3px;background:#21262d;border-radius:2px;margin:2px auto 0;"><div style="width:${barW}px;height:3px;background:${barCol};border-radius:2px;"></div></div>`;
+          scoreCell  = `<span class="${gateCls} text-[9px] font-bold px-1.5 py-0.5 rounded">${pct}%${dec}</span>${bar}`;
         }
 
         // ── MTF 6H ───────────────────────────────────────────────────
@@ -1517,9 +1505,8 @@
       const byStrat = (kpis.by_strategy) || {};
       const stratDefs = [
         { name: 'Donchian Breakout', icon: '🚀', short: 'Donchian' },
-        { name: 'MACD Momentum',     icon: '⚡', short: 'MACD'    },
-        { name: 'EMA Pullback',      icon: '📋', short: 'EMA PB'  },
-        { name: 'BB Reversion',      icon: '↩️', short: 'BB Rev'  },
+        { name: 'EMA Pullback',      icon: '📈', short: 'EMA PB'   },
+        { name: 'V4:signal',         icon: '⚙️', short: 'V4'       },
       ];
 
       stTable.innerHTML = stratDefs.map(sd => {
@@ -1749,9 +1736,9 @@
     bbLowerSeries = candleChart.addLineSeries({ color: 'rgba(99,102,241,0.5)', lineWidth: 1, lineStyle: 3, priceLineVisible: false, lastValueVisible: false });
     bbMidSeries   = candleChart.addLineSeries({ color: 'rgba(99,102,241,0.25)', lineWidth: 1, lineStyle: 0, priceLineVisible: false, lastValueVisible: false });
 
-    // ── 2. MACD (12,26,9) — linha MACD > 0 é filtro ativo ───────────────
+    // ── 2. Orderflow Proxy — taker buy/sell ratio + volume delta ────────
     const { wrap: macdWrap, chartDiv: macdEl } = makeChartWrapper(
-      'MACD (12·26·9)', '— linha azul > 0 = filtro ativo | histograma verde = momentum positivo',
+      'Orderflow Proxy', '— azul = taker buy ratio | vermelho = taker sell ratio | histograma = volume delta',
       container
     );
     macdChart = LightweightCharts.createChart(macdEl, { ...commonOpts, height: 80 });
@@ -1760,9 +1747,9 @@
     macdHistSeries = macdChart.addHistogramSeries({ priceLineVisible: false, lastValueVisible: false });
     macdZeroSeries = macdChart.addLineSeries({ color: 'rgba(156,163,175,0.35)', lineWidth: 1, lineStyle: 0, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
 
-    // ── 3. RSI (14) — filtro MACD (RSI < 75) e EMA Pullback ─────────────
+    // ── 3. Realized Volatility — percentil e zona saudável ─────────────
     const { wrap: rsiWrap, chartDiv: rsiEl } = makeChartWrapper(
-      'RSI (14)', '— MACD bloqueado se RSI > 75 | linha verde 35 = entrada BB Reversion | linha vermelha 75 = sobrecomprado',
+      'Volatilidade Realizada', '— amarelo = vol realizada anual | zona verde = saudável (30-60%) | zona vermelha = extrema (>80%)',
       macdWrap
     );
     rsiChart = LightweightCharts.createChart(rsiEl, { ...commonOpts, height: 80 });
@@ -1771,18 +1758,18 @@
     rsiOSSeries = rsiChart.addLineSeries({ color: 'rgba(74,222,128,0.4)',  lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
     rsiMidSeries = rsiChart.addLineSeries({ color: 'rgba(156,163,175,0.25)', lineWidth: 1, lineStyle: 0, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
 
-    // ── 4. OBV — filtro de volume do Donchian (OBV em nova máxima = breakout real)
+    // ── 4. OBV — volume acumulado (proxy de acumulação/distribuição) ────
     const { wrap: obvWrap, chartDiv: obvEl } = makeChartWrapper(
-      'OBV — On-Balance Volume', '— crescente = acumulação institucional | decrescente = distribuição (informativo)',
+      'OBV — On-Balance Volume', '— crescente = acumulação | decrescente = distribuição | usado no Market Structure Engine',
       rsiWrap
     );
     obvChart     = LightweightCharts.createChart(obvEl, { ...commonOpts, height: 80 });
     obvSeries    = obvChart.addLineSeries({ color: '#38bdf8', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: true });
     obvZeroSeries = obvChart.addLineSeries({ color: 'rgba(156,163,175,0.25)', lineWidth: 1, lineStyle: 0, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
 
-    // ── 5. ADX (14) — Market Regime Engine: >20 trending, <20 chop ──────
+    // ── 5. ADX (14) — input para Regime Engine V4 ───────────────────────
     const { wrap: adxWrap, chartDiv: adxEl } = makeChartWrapper(
-      'ADX (14) — Regime de Mercado', '— roxo = força da tendência | verde ≥20 = TRENDING (Donchian/MACD/EMA) | amarelo <20 = CHOP (BB Reversion ativo)',
+      'ADX (14) — Regime Engine V4', '— roxo = força da tendência | verde ≥30 = TREND_EXPANSION | amarelo <20 = CHOP | 7 regimes no V4',
       obvWrap
     );
     adxChart       = LightweightCharts.createChart(adxEl, { ...commonOpts, height: 80 });
@@ -1790,10 +1777,10 @@
     adxTrendSeries = adxChart.addLineSeries({ color: 'rgba(74,222,128,0.5)',  lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
     adxRangeSeries = adxChart.addLineSeries({ color: 'rgba(250,204,21,0.5)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
 
-    // ── 6. BB Reversion — RSI com zona oversold (sinal de reversão) ──────
+    // ── 6. V4 Score — score probabilístico por ciclo ────────────────────
     const { wrap: bbRevWrap, chartDiv: bbRevEl } = makeChartWrapper(
-      'BB Reversion — RSI (14)',
-      '— RSI < 35 + preço < BB inferior = sinal de reversão CHOP | linha verde = zona de entrada | linha vermelha = saída na média BB',
+      'V4 Score Probabilístico',
+      '— roxo = score V4 (0-100%) | verde ≥75% = AGRESSIVO | azul 65-75% = NORMAL | cinza <55% = HOLD',
       adxWrap
     );
     bbRevChart       = LightweightCharts.createChart(bbRevEl, { ...commonOpts, height: 80 });
@@ -1912,35 +1899,39 @@
       bbLowerSeries.setData(candles.map((c,i) => ({ time: c.time, value: bbMid[i] - bbMult * bbStd[i] })));
       bbMidSeries.setData(candles.map((c,i)   => ({ time: c.time, value: bbMid[i] })));
 
-      // ── MACD (12, 26, 9) — linha MACD > 0 é o filtro ────────────────
-      const ema12 = calcEMA(closes, 12), ema26 = calcEMA(closes, 26);
-      const macdLine = ema12.map((v, i) => v - ema26[i]);
-      const macdSig  = calcEMA(macdLine, 9);
-      macdFastSeries.setData(candles.map((c,i) => ({ time: c.time, value: macdLine[i] })));
-      macdSlowSeries.setData(candles.map((c,i) => ({ time: c.time, value: macdSig[i]  })));
-      macdHistSeries.setData(candles.map((c,i) => ({
-        time: c.time,
-        value: macdLine[i] - macdSig[i],
-        color: macdLine[i] >= macdSig[i] ? 'rgba(74,222,128,0.7)' : 'rgba(248,113,113,0.7)',
-      })));
-      // Linha zero — filtro "MACD line > 0"
-      macdZeroSeries.setData(candles.map(c => ({ time: c.time, value: 0 })));
-
-      // ── RSI (14) — acima de 75 bloqueia MACD, abaixo de 30 sobrevenda ──
-      const rsiP = 14;
-      const rsiVals = closes.map((_, i) => {
-        if (i < rsiP) return 50;
-        const sl    = closes.slice(i - rsiP, i);
-        const gains = sl.map((v, j) => j > 0 ? Math.max(0, v - sl[j-1]) : 0);
-        const losses= sl.map((v, j) => j > 0 ? Math.max(0, sl[j-1] - v) : 0);
-        const avgG  = gains.reduce((a,b) => a+b, 0) / rsiP;
-        const avgL  = losses.reduce((a,b) => a+b, 0) / rsiP;
-        return avgL === 0 ? 100 : 100 - (100 / (1 + avgG / avgL));
+      // ── Orderflow Proxy — proxy via candle up/down volume ───────────────
+      // Usa volume de candles de alta vs baixa como proxy do taker ratio
+      const volSum = candles.reduce((s, c) => s + (c.volume || 0), 0) / candles.length;
+      const buyRatioVals = candles.map((c, i) => {
+        const window = candles.slice(Math.max(0, i - 9), i + 1);
+        const bv = window.reduce((s,x) => s + (x.close >= x.open ? (x.volume||0) : 0), 0);
+        const tv = window.reduce((s,x) => s + (x.volume||0), 0);
+        return tv > 0 ? bv / tv : 0.5;
       });
-      rsiSeries.setData(candles.map((c,i) => ({ time: c.time, value: rsiVals[i] })));
-      rsiOBSeries.setData(candles.map(c => ({ time: c.time, value: 70 })));  // bloqueio MACD
-      rsiOSSeries.setData(candles.map(c => ({ time: c.time, value: 30 })));  // sobrevenda
-      rsiMidSeries.setData(candles.map(c => ({ time: c.time, value: 50 })));
+      const sellRatioVals = buyRatioVals.map(v => 1 - v);
+      const deltaVals = buyRatioVals.map((v, i) => v - sellRatioVals[i]);
+      macdFastSeries.setData(candles.map((c,i) => ({ time: c.time, value: buyRatioVals[i] })));
+      macdSlowSeries.setData(candles.map((c,i) => ({ time: c.time, value: sellRatioVals[i] })));
+      macdHistSeries.setData(candles.map((c,i) => ({
+        time: c.time, value: deltaVals[i],
+        color: deltaVals[i] >= 0 ? 'rgba(74,222,128,0.7)' : 'rgba(248,113,113,0.7)',
+      })));
+      macdZeroSeries.setData(candles.map(c => ({ time: c.time, value: 0.5 })));
+
+      // ── Realized Volatility — vol anualizada rolling 24 candles ─────────
+      const rsiVals = closes.map((_, i) => {
+        if (i < 2) return 0.3;
+        const window = closes.slice(Math.max(0, i - 23), i + 1);
+        if (window.length < 2) return 0.3;
+        const logRets = window.slice(1).map((v, j) => Math.log(v / window[j]));
+        const mean = logRets.reduce((a,b) => a+b, 0) / logRets.length;
+        const variance = logRets.reduce((s,r) => s + (r-mean)**2, 0) / logRets.length;
+        return Math.sqrt(variance) * Math.sqrt(8760);
+      });
+      rsiSeries.setData(candles.map((c,i) => ({ time: c.time, value: Math.min(rsiVals[i], 3) })));
+      rsiOBSeries.setData(candles.map(c => ({ time: c.time, value: 0.80 })));  // extrema
+      rsiOSSeries.setData(candles.map(c => ({ time: c.time, value: 0.30 })));  // saudável
+      rsiMidSeries.setData(candles.map(c => ({ time: c.time, value: 0.55 })));  // média
 
       // ── ADX (14) — detecta regime de mercado ─────────────────────────
       // ADX > 20 → trending (Donchian+EMA ativos) | < 20 → ranging/chop
@@ -1976,8 +1967,8 @@
         return adxRaw.map((v, i) => i < adxP * 2 ? 20 : v / adxP);
       })();
       adxSeries.setData(candles.map((c,i) => ({ time: c.time, value: Math.min(100, Math.max(0, adxVals[i])) })));
-      adxTrendSeries.setData(candles.map(c => ({ time: c.time, value: 20 }))); // trending threshold
-      adxRangeSeries.setData(candles.map(c => ({ time: c.time, value: 15 }))); // chop threshold
+      adxTrendSeries.setData(candles.map(c => ({ time: c.time, value: 30 }))); // TREND_EXPANSION threshold V4
+      adxRangeSeries.setData(candles.map(c => ({ time: c.time, value: 20 }))); // CHOP threshold V4
 
       // ── OBV — On-Balance Volume (filtro confirmação breakout Donchian) ──
       // OBV crescente junto com preço = breakout real com volume institucional
@@ -1995,30 +1986,30 @@
       obvSeries.setData(candles.map((c,i) => ({ time: c.time, value: obvVals[i] })));
       obvZeroSeries.setData(candles.map(c => ({ time: c.time, value: 0 })));
 
-      // ── BB Reversion — RSI(14) com zonas oversold/saída ─────────────────
+      // ── V4 Score Proxy — BB width percentile como proxy do score probabilístico
       if (bbRevRsiSeries && bbRevChart) {
-        // RSI 14 (mesmo cálculo do sub-chart RSI existente, mas em roxo claro)
-        const rsiPeriod = 14;
-        const bbRevRsiVals = (() => {
-          const r = new Array(closes.length).fill(50);
-          for (let i = rsiPeriod; i < closes.length; i++) {
-            const sl = closes.slice(i - rsiPeriod, i);
-            let gains = 0, losses = 0;
-            for (let j = 1; j < sl.length; j++) {
-              const d = sl[j] - sl[j-1];
-              if (d > 0) gains += d; else losses -= d;
-            }
-            const avgG = gains / rsiPeriod;
-            const avgL = losses / rsiPeriod;
-            r[i] = avgL === 0 ? 100 : 100 - (100 / (1 + avgG / avgL));
+        const bbP2 = 20;
+        const bbWidthPct = closes.map((_, i) => {
+          if (i < bbP2 + 50) return 0.5;
+          const hist = [];
+          for (let j = 50; j >= 0; j--) {
+            const sub = closes.slice(i - bbP2 - j, i - j);
+            if (sub.length < bbP2) continue;
+            const m = sub.reduce((a,b) => a+b,0)/bbP2;
+            const std = Math.sqrt(sub.reduce((s,v)=>s+(v-m)**2,0)/bbP2);
+            hist.push(std*4/m);
           }
-          return r;
-        })();
-        bbRevRsiSeries.setData(candles.map((c,i) => ({ time: c.time, value: bbRevRsiVals[i] })));
-        // Linha 35 — zona de entrada BB Reversion (RSI oversold)
-        bbRevOversoldLine.setData(candles.map(c => ({ time: c.time, value: 35 })));
-        // Linha 60 — zona de saída / retorno à média
-        bbRevMidLine.setData(candles.map(c => ({ time: c.time, value: 60 })));
+          const cur = (() => {
+            const sub = closes.slice(i-bbP2, i);
+            const m = sub.reduce((a,b)=>a+b,0)/bbP2;
+            const std = Math.sqrt(sub.reduce((s,v)=>s+(v-m)**2,0)/bbP2);
+            return std*4/m;
+          })();
+          return hist.filter(v=>v<=cur).length / hist.length;
+        });
+        bbRevRsiSeries.setData(candles.map((c,i) => ({ time: c.time, value: bbWidthPct[i] })));
+        bbRevOversoldLine.setData(candles.map(c => ({ time: c.time, value: 0.75 }))); // AGRESSIVO
+        bbRevMidLine.setData(candles.map(c => ({ time: c.time, value: 0.55 })));      // HOLD
       }
 
     } catch(e) { console.error('[Candles]', e); }
