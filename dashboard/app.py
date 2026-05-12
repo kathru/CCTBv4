@@ -552,6 +552,9 @@ def _calculate_kpis() -> dict:
             "realized_usd":    round(sum(s_pnls), 2),
         }
 
+    total_fees = engine.total_fees_usd
+    net_pnl    = sum_wins - sum_loss - total_fees
+
     return {
         # Global
         "total_trades":   len(all_trades_list),
@@ -564,6 +567,11 @@ def _calculate_kpis() -> dict:
         "profit_factor":  round(sum_wins / sum_loss, 3) if sum_loss else 0.0,
         "expected_value": round((avg_win * wins + avg_loss * losses) / n, 2) if n else 0.0,
         "max_drawdown":   round(max_dd, 2),
+        # P&L breakdown
+        "gross_wins_usd":  round(sum_wins,   2),
+        "gross_losses_usd":round(sum_loss,   2),
+        "total_fees_usd":  round(total_fees, 4),
+        "net_pnl_usd":     round(net_pnl,    2),
         # Por estratégia
         "by_strategy":    by_strat,
     }

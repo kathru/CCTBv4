@@ -944,21 +944,29 @@
     document.getElementById('pnl-pct').textContent = (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%';
     document.getElementById('pnl-pct').className = 'text-[10px] mt-0.5 ' + (pnlPct >= 0 ? 'text-green-500' : 'text-red-500');
 
-    // Ganhos e perdas totais dos trades realizados
-    { const trades = s.trades || [];
-      let grossWins = 0, grossLosses = 0;
-      trades.forEach(t => {
-        if (t.side !== 'SELL') return;
-        const pnl = t.pnl_net != null ? t.pnl_net : (t.usd != null && t.entry_price && t.qty
-          ? (t.price - t.entry_price) * t.qty - (t.fee || 0) : null);
-        if (pnl == null) return;
-        if (pnl > 0) grossWins   += pnl;
-        else         grossLosses += Math.abs(pnl);
-      });
+    // P&L breakdown: ganhos, perdas e taxas — vindos do backend (FIFO real)
+    { const kpis = s.kpis || {};
+      const grossWins   = kpis.gross_wins_usd   || 0;
+      const grossLosses = kpis.gross_losses_usd  || 0;
+      const feesUsd     = kpis.total_fees_usd    || 0;
+      const netPnl      = kpis.net_pnl_usd       || 0;
       const wEl = document.getElementById('pnl-wins');
       const lEl = document.getElementById('pnl-losses');
       if (wEl) wEl.textContent = 'R$ ' + fmtBRL(grossWins   * usdBrl);
       if (lEl) lEl.textContent = 'R$ ' + fmtBRL(grossLosses * usdBrl);
+      // P&L principal = ganhos - perdas - taxas
+      const netBRL = netPnl * usdBrl;
+      const netPct = (s.portfolio?.initial_brl || 0) > 0
+        ? netBRL / (s.portfolio?.initial_brl || 1) * 100 : 0;
+      if (pnlEl) {
+        pnlEl.textContent = (netBRL >= 0 ? '+' : '-') + 'R$ ' + fmtBRL(Math.abs(netBRL));
+        pnlEl.className = 'text-lg font-bold leading-tight ' + (netBRL >= 0 ? 'text-green-400' : 'text-red-400');
+      }
+      const pctEl = document.getElementById('pnl-pct');
+      if (pctEl && kpis.sell_trades > 0) {
+        pctEl.textContent = (netPct >= 0 ? '+' : '') + netPct.toFixed(2) + '%';
+        pctEl.className = 'text-[10px] mt-0.5 ' + (netPct >= 0 ? 'text-green-500' : 'text-red-500');
+      }
     }
 
     const subtitleEl = document.getElementById('strategy-panel-subtitle');
