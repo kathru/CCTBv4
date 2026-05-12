@@ -173,13 +173,11 @@
       </div>
       <div class="mt-3 flex items-center gap-3 text-[10px] text-gray-500">
         <span>Score: <span id="breadth-score" class="font-bold text-white">—</span></span>
-        <span>Mult: <span id="breadth-mult" class="font-bold text-white">—</span></span>
+        <span id="breadth-block-badge" class="hidden px-2 py-0.5 rounded font-bold bg-red-500/20 text-red-400 border border-red-500/30">🚫 COMPRAS BLOQUEADAS</span>
         <span class="ml-auto">
-          <span class="text-green-400 font-semibold">≥70% NORMAL</span>
+          <span class="text-green-400 font-semibold">≥40% compras liberadas</span>
           <span class="mx-1">·</span>
-          <span class="text-yellow-400 font-semibold">40-70% REDUZIDO (×0.7)</span>
-          <span class="mx-1">·</span>
-          <span class="text-red-400 font-semibold">&lt;40% BLOQUEADO SOL</span>
+          <span class="text-red-400 font-semibold">&lt;40% BLOQUEADO</span>
         </span>
       </div>
     </div>
@@ -890,7 +888,7 @@
       const mbLabelEl = document.getElementById('breadth-label');
       const mbLabel   = mb.label || 'N/A';
       const mbScore   = mb.score;
-      const mbMult    = mb.size_multiplier ?? 1.0;
+      const mbBlocked = (mb.score != null && mb.score < 0.40);
       if (mbLabelEl) {
         const lCls = mbLabel === 'STRONG'   ? 'bg-green-900 text-green-300'
                    : mbLabel === 'MODERATE' ? 'bg-blue-900 text-blue-300'
@@ -927,12 +925,12 @@
         oiEl.style.color = oi == null ? '#9ca3af' : oi >= 5 ? '#4ade80' : oi >= 0 ? '#60a5fa' : '#f87171';
       }
       const scoreEl = document.getElementById('breadth-score');
-      if (scoreEl) scoreEl.textContent = mbScore != null ? Math.round(mbScore * 100) + '%' : '—';
-      const multEl = document.getElementById('breadth-mult');
-      if (multEl) {
-        multEl.textContent = '×' + mbMult.toFixed(1);
-        multEl.style.color = mbMult >= 1.0 ? '#4ade80' : mbMult >= 0.7 ? '#fb923c' : '#f87171';
+      if (scoreEl) {
+        scoreEl.textContent = mbScore != null ? Math.round(mbScore * 100) + '%' : '—';
+        scoreEl.style.color = mbScore == null ? '#9ca3af' : mbScore >= 0.40 ? '#4ade80' : '#f87171';
       }
+      const blockBadge = document.getElementById('breadth-block-badge');
+      if (blockBadge) blockBadge.classList.toggle('hidden', !mbBlocked);
     }
 
     // ── V4 Engine Panel ───────────────────────────────────────────────────
