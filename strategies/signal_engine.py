@@ -33,8 +33,45 @@ Score final combinado:
 """
 
 import math
+import json
+import os
 import statistics
 from typing import Optional
+
+# ── Platt Scaling (calibração) ────────────────────────────────────────────────
+# Carregado de data/calibration_coef.json quando disponível.
+# Produzido por calibrate.py após rodar sobre 8 anos de dados OKX.
+# Enquanto não existir, score raw é usado (sem calibração).
+_CALIB_COEF: Optional[dict] = None
+
+def _load_calibration() -> Optional[dict]:
+    path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "data", "calibration_coef.json"
+    )
+    if os.path.exists(path):
+        try:
+            with open(path) as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return None
+
+def _apply_calibration(raw_score: float) -> tuple:
+    """
+    Aplica Platt Scaling se disponível.
+    Retorna (calibrated_score, is_calibrated).
+    Se coeficientes não existem, retorna (raw_score, False).
+    """
+    global _CALIB_COEF
+    if _CALIB_COEF is None:
+        _CALIB_COEF = _load_calibration() or {}
+    a = _CALIB_COEF.get("platt_a")
+    b = _CALIB_COEF.get("platt_b")
+    if a is None or b is None:
+        return raw_score, False
+    cal = 1.0 / (1.0 + math.exp(-(a * raw_score + b)))
+    return round(cal, 4), True
 
 
 # Pesos dos fatores no score final (dinâmicos por regime — ajustados no compute)
@@ -624,8 +661,22 @@ def compute_signal_score(
         rel_str["confidence"] * 0.20
     )
 
+    # Aplica Platt Scaling se calibration_coef.json disponível
+    score_raw = score
+    score_cal, is_calibrated = _apply_calibration(score)
+    score = score_cal   # usa score calibrado se disponível, raw caso contrário
+
+    # Recalcula EV com score calibrado
+    p = score
+    q = 1 - p
+    ev = p * b - q * 1.0 - fee_rate * (1 + b)
+    kelly_full = (p * b - q) / b if b > 0 else 0.0
+    kelly_fraction = max(0.0, kelly_full * 0.25)
+
     return {
         "score":           round(score, 4),
+        "score_raw":       round(score_raw, 4),
+        "calibrated":      is_calibrated,
         "expected_value":  round(ev, 4),
         "kelly_fraction":  round(kelly_fraction, 4),
         "confidence":      round(confidence, 3),
