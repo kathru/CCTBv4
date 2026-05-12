@@ -34,8 +34,11 @@ from strategies.regime_engine    import detect_regime, RegimeResult
 from strategies.signal_engine    import compute_signal_score
 from strategies.sizing_engine    import compute_position_size
 from strategies.risk_engine      import (
-    calc_portfolio_var, calc_drawdown_acceleration,
-    calc_strategy_decay, run_monte_carlo, evaluate_risk_actions
+    calc_drawdown_acceleration,
+    calc_strategy_decay, evaluate_risk_actions
+)
+from strategies.risk_prior       import (
+    calc_robust_var, calc_robust_monte_carlo, load_prior
 )
 from strategies.meta_layer       import MetaLayer
 from strategies.portfolio_engine import evaluate_new_entry, calc_portfolio_beta
@@ -389,13 +392,16 @@ class V4Orchestrator:
         if len(self.portfolio_history) > 200:
             self.portfolio_history = self.portfolio_history[-200:]
 
-        # VaR
-        var_result = calc_portfolio_var(trades, portfolio_value)
+        # VaR robusto (prior bayesiano + trades reais)
+        prior = load_prior()
+        var_result = calc_robust_var(trades, portfolio_value, prior=prior)
 
-        # Monte Carlo (a cada 4h para não sobrecarregar)
+        # Monte Carlo robusto (a cada 4h para não sobrecarregar)
         now = time.time()
         if now - self._last_mc_run > 14400 or not self.risk_state.get("mc_result"):
-            mc_result = run_monte_carlo(trades, portfolio_value, n_simulations=2000, horizon=30)
+            mc_result = calc_robust_monte_carlo(
+                trades, portfolio_value, prior=prior, n_simulations=2000, horizon=30
+            )
             self._last_mc_run = now
         else:
             mc_result = self.risk_state.get("mc_result", {})
