@@ -324,17 +324,23 @@ class V4Orchestrator:
                 "context":  market_ctx,
             }
 
-        # Sinal reverso forte → fecha
+        # Sinal reverso forte → fecha APENAS se estiver no lucro
+        # Regra institucional: sinal não pode forçar venda abaixo do preço de entrada.
+        # Somente o SL é autorizado a fechar com prejuízo — o sinal só realiza lucro.
         if signal["direction"] == "short" and signal["score"] > 0.68:
-            return {
-                "decision": "SELL",
-                "reason":   f"Sinal reverso forte: score={signal['score']:.3f}",
-                "score":    signal["score"],
-                "size_pct": 0.0,
-                "regime":   regime_result,
-                "signal":   signal,
-                "context":  market_ctx,
-            }
+            if current_price > entry_price:
+                gain_pct = (current_price - entry_price) / entry_price * 100
+                return {
+                    "decision": "SELL",
+                    "reason":   f"Sinal reverso com lucro: +{gain_pct:.2f}% | score={signal['score']:.3f}",
+                    "score":    signal["score"],
+                    "size_pct": 0.0,
+                    "regime":   regime_result,
+                    "signal":   signal,
+                    "context":  market_ctx,
+                }
+            # Abaixo do entry: mantém posição, SL cuidará da saída
+            existing_slot["sl_level"] = current_sl  # garante SL atualizado
 
         # Atualiza trailing stop
         sl_update = update_trailing_stop(
