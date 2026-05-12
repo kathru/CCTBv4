@@ -165,21 +165,20 @@ SP_OFFSET = -3 * 3600   # UTC-3 fixo — SP aboliu horário de verão em 2019
 
 
 def _current_cycle() -> int:
-    """Número da hora atual em SP (UTC-3). Vai de 0 (meia-noite SP) a 23."""
+    """Número do ciclo de 15min atual em SP (UTC-3). 0–95 por dia."""
     return (int(time.time()) + SP_OFFSET) % 86400 // CYCLE_INTERVAL
 
 
 def _seconds_to_next_sp_hour() -> float:
     """
-    Segundos até o início da próxima hora cheia em SP (UTC-3).
-    Garante que os ciclos de 1H fiquem alinhados com o relógio:
-      ex.: se são 14:47 SP → aguarda 13min até 15:00 SP.
-    Mínimo de 30s para evitar re-execução imediata no final de uma hora.
+    Segundos até o próximo múltiplo de 15min em SP (UTC-3).
+    Alinha ciclos em :00, :15, :30, :45 de cada hora.
+    Mínimo de 10s para evitar re-execução imediata.
     """
-    now_sp       = time.time() + SP_OFFSET
-    secs_in_hour = now_sp % 3600
-    wait         = 3600 - secs_in_hour
-    return wait if wait >= 30 else wait + 3600
+    now_sp        = time.time() + SP_OFFSET
+    secs_in_cycle = now_sp % CYCLE_INTERVAL
+    wait          = CYCLE_INTERVAL - secs_in_cycle
+    return wait if wait >= 10 else wait + CYCLE_INTERVAL
 
 
 PAIRS = ["BTC-USD", "ETH-USD", "SOL-USD"]  # 3 pares — foco em ativos de maior liquidez
@@ -189,7 +188,7 @@ TOTAL_BRL_INITIAL = 5000.0  # Portfolio inicial em BRL — FIXO, nunca muda
 # Portfolio em USD varia com cotação: USD_atual = TOTAL_BRL_INITIAL / usd_brl_atual
 
 # ── Ciclo e candles ─────────────────────────────────────────────
-CYCLE_INTERVAL    = 3600     # ciclo de 3600s (1 hora)
+CYCLE_INTERVAL    = 900      # ciclo de 900s (15 minutos), alinhado ao UTC-3
 CANDLE_30M        = "THIRTY_MINUTE"
 CANDLE_1H         = "ONE_HOUR"       # EMA Pullback, MACD
 CANDLE_6H         = "SIX_HOUR"
