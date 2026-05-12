@@ -29,8 +29,9 @@ coverage_report/
 *.log
 logs/
 
-# Estado persistido (dados locais)
-data/
+# Estado persistido (dados locais — JSONs gerados em runtime)
+data/*.json
+data/portfolio_history.json
 
 # OS
 .DS_Store
