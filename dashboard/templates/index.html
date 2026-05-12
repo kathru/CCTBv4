@@ -144,15 +144,6 @@
       </div>
     </div>
 
-    <!-- ── Painel de Estratégias ── -->
-    <div class="card p-5">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="font-semibold text-white">Painel de estratégias</h3>
-        <span id="strategy-panel-subtitle" class="text-xs text-gray-500">P&L em trades</span>
-      </div>
-      <div id="strategy-panel" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
-    </div>
-
     <!-- ── Cards de Criptos ── -->
     <div id="crypto-grid" class="grid grid-cols-1 lg:grid-cols-3 gap-4"></div>
 
@@ -502,51 +493,6 @@
         </div>
       </div>
 
-      <!-- Tabela por estratégia -->
-      <div class="overflow-x-auto">
-        <table class="w-full text-xs">
-          <thead>
-            <tr class="text-gray-500 uppercase tracking-wider text-[9px] border-b border-gray-800">
-              <th class="text-left pb-2 pr-3">Estratégia</th>
-              <th class="text-center pb-2 px-3">
-                Win Rate
-                <div class="text-[8px] text-gray-600 font-normal normal-case">total · últ.10</div>
-              </th>
-              <th class="text-center pb-2 px-3">
-                Profit Factor
-                <div class="text-[8px] text-gray-600 font-normal normal-case">lucro / perda</div>
-              </th>
-              <th class="text-center pb-2 px-3">
-                Edge Decay
-                <div class="text-[8px] text-gray-600 font-normal normal-case">recente vs total</div>
-              </th>
-              <th class="text-center pb-2 px-3">
-                DD Contrib.
-                <div class="text-[8px] text-gray-600 font-normal normal-case">% do drawdown</div>
-              </th>
-              <th class="text-center pb-2 px-3">
-                MFE Capture
-                <div class="text-[8px] text-gray-600 font-normal normal-case">realizado / potencial</div>
-              </th>
-              <th class="text-center pb-2 pl-3">
-                P&L
-                <div class="text-[8px] text-gray-600 font-normal normal-case">realizado</div>
-              </th>
-            </tr>
-          </thead>
-          <tbody id="kpi-strategy-table">
-            <!-- populated by JS -->
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Legenda -->
-      <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[9px] text-gray-600 border-t border-gray-800 pt-2">
-        <span><span class="text-green-400">▲</span> Edge Decay positivo = melhora recente</span>
-        <span><span class="text-red-400">▼</span> Edge Decay negativo = deterioração nos últimos 10 trades</span>
-        <span>MFE Capture = % do alvo TP que foi efetivamente realizado</span>
-        <span>DD Contrib = % do drawdown máximo originado desta estratégia</span>
-      </div>
     </div>
 
   </main>
@@ -853,18 +799,20 @@
       }
 
       if (sig) {
-        // Slots por estratégia
-        const slots = s.slots || {};
+        // Slot V4 por par
+        const slots  = s.slots || {};
+        const v4slot = slots[`V4:${c.pair}`] || {};
         STRATEGIES.forEach(st => {
           const el = document.getElementById(`slot-${c.sym}-${st.id}`);
           if (!el) return;
-          const sigVal = (sig.strategies || {})[st.name] || 'HOLD';
-          const slot   = slots[`${st.name}:${c.pair}`] || {};
+          const v4d    = (s.v4 || {})[c.pair] || {};
+          const sigVal = st.id === 'V4' ? (v4d.decision || 'HOLD') : 'HOLD';
+          const slot   = st.id === 'V4' ? v4slot : {};
           const ps     = el.querySelectorAll('p');
           el.className = signalClass(sigVal) + ' rounded-lg px-1 py-1.5 text-center text-[9px]';
           if (ps[1]) ps[1].textContent = sigVal;
           if (ps[2]) {
-            if ((slot.qty || 0) > 0 && price && slot.entry) {
+            if (st.id === 'V4' && (slot.qty || 0) > 0 && price && slot.entry) {
               const chg2 = (price.price - slot.entry) / slot.entry * 100;
               ps[2].textContent = `● ${chg2 >= 0 ? '+' : ''}${chg2.toFixed(1)}%`;
               ps[2].style.color = chg2 >= 0 ? '#4ade80' : '#f87171';
@@ -912,89 +860,7 @@
       if (qtyEl && qty > 0) qtyEl.textContent = qty.toFixed(6);
     });
 
-    // ── Painel de Estratégias ─────────────────────────────────────────────
-    const stratPnl = s.strategy_pnl || {};
     const allSlots = s.slots || {};
-    const tpPct    = (s.tp_objective || {}).current || 5;
-    const panel    = document.getElementById('strategy-panel');
-    if (panel) {
-      panel.innerHTML = STRATEGIES.map(st => {
-        const sp      = stratPnl[st.name] || {};
-        const realUsd = sp.realized || 0;
-        const realBrl = realUsd * usdBrl;
-        const buys    = sp.buys  || 0;
-        const sells   = sp.sells || 0;
-        let unrlUsd = 0, tpUsd = 0;
-        CRYPTOS.forEach(c => {
-          const sl = allSlots[`${st.name}:${c.pair}`] || {};
-          unrlUsd += (sl.unrealized || 0);
-          if ((sl.qty || 0) > 0 && (sl.entry || 0) > 0) {
-            tpUsd += sl.entry * sl.qty * (tpPct / 100);
-          }
-        });
-        const unrlBrl   = unrlUsd * usdBrl;
-        const tpBrl     = tpUsd * usdBrl;
-        const tpFalta   = Math.max(0, tpBrl - realBrl);
-        const totalBrl2 = realBrl + unrlBrl;
-        const pnlColor  = totalBrl2 >= 0 ? '#4ade80' : '#f87171';
-        // Badges de todas as criptos: cinza=sem posição, verde=positivo, vermelho=negativo
-        const sPrices = s.prices || {};
-        const sSignals = s.signals || {};
-        // Separar pares COM posição dos SEM posição
-        const withPos = [], withoutPos = [];
-        CRYPTOS.forEach(c => {
-          const sl       = allSlots[`${st.name}:${c.pair}`] || {};
-          const hasPos   = (sl.qty || 0) > 0;
-          const curPrice = (sPrices[c.pair] || {}).price;
-          const cSig     = sSignals[c.pair];
-          const cRegime  = cSig ? inferRegime(cSig) : 'NEUTRAL';
-          const regBg    = cRegime==='TRENDING' ? 'rgba(34,197,94,0.08)' : cRegime==='RANGING' ? 'rgba(234,179,8,0.08)' : 'rgba(107,114,128,0.08)';
-          const regBord  = cRegime==='TRENDING' ? 'rgba(34,197,94,0.25)' : cRegime==='RANGING' ? 'rgba(234,179,8,0.25)' : 'rgba(107,114,128,0.2)';
-          const regCol   = cRegime==='TRENDING' ? '#4ade80' : cRegime==='RANGING' ? '#facc15' : '#6b7280';
-
-          if (hasPos && curPrice && sl.entry) {
-            const chg      = (curPrice - sl.entry) / sl.entry * 100;
-            const positive = chg >= 0;
-            const bg       = positive ? 'rgba(74,222,128,0.18)' : 'rgba(248,113,113,0.18)';
-            const border   = positive ? 'rgba(74,222,128,0.6)'  : 'rgba(248,113,113,0.6)';
-            const color    = positive ? '#4ade80' : '#f87171';
-            const pyr      = sl.pyramids > 0 ? ` ×${sl.pyramids+1}` : '';
-            // Badge destacado: borda grossa, ícone ▲, nome + % + pyramids
-            withPos.push(`<span style="background:${bg};border:2px solid ${border};color:${color};box-shadow:0 0 6px ${border}" class="text-[9px] font-bold px-2 py-0.5 rounded-md" title="Comprado — ${cRegime}">▲ ${c.sym}${pyr} ${chg>=0?'+':''}${chg.toFixed(1)}%</span>`);
-          } else {
-            // Badge discreto sem posição
-            withoutPos.push(`<span style="background:${regBg};border:1px solid ${regBord};color:${regCol}" class="text-[9px] px-1.5 py-0.5 rounded opacity-50" title="${cRegime}">${c.sym}</span>`);
-          }
-        });
-        // Posições abertas primeiro, depois sem posição
-        const pairBadges = [...withPos, ...withoutPos];
-
-        // Filter badge per strategy
-        const filterBadge = st.filters.map(f =>
-          `<span class="text-[8px] px-1 py-0.5 rounded" style="background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);color:#818cf8">${f}</span>`
-        ).join('');
-
-        return `<div class="bg-gray-800/50 border border-gray-700 rounded-xl p-3 strat-tooltip">
-          <div class="strat-tooltip-box">
-            <p class="text-[10px] font-semibold text-white mb-1">${st.name}</p>
-            <p class="text-[10px] text-gray-400 leading-relaxed">${st.desc}</p>
-          </div>
-          <div class="flex items-center gap-1.5 mb-1">
-            <span>${st.icon}</span>
-            <span class="text-xs font-semibold text-white truncate">${st.name}</span>
-          </div>
-          <div class="flex flex-wrap gap-1 mb-1.5">${filterBadge}</div>
-          <div class="flex flex-wrap gap-1 mb-2">${pairBadges.join('')}</div>
-          <p class="text-sm font-bold font-mono" style="color:${pnlColor}">${totalBrl2 >= 0 ? '+' : '-'}R$ ${fmtBRL(Math.abs(totalBrl2))}</p>
-          <div class="flex justify-between text-[10px] mt-1">
-            <span style="color:#4ade80">Realizado: ${realBrl >= 0 ? '+' : ''}R$ ${fmtBRL(realBrl)}</span>
-            <span class="text-gray-600">${buys}↑ ${sells}↓</span>
-          </div>
-          ${unrlUsd !== 0 ? `<p class="text-[10px] mt-0.5" style="color:#f97316">Não realizado: ${unrlBrl>=0?'+':'-'}R$ ${fmtBRL(Math.abs(unrlBrl))}</p>` : ''}
-          ${tpBrl > 0 ? `<p class="text-[10px] mt-0.5" style="color:#818cf8">TP: falta R$ ${fmtBRL(tpFalta)} (${tpBrl > 0 ? ((tpFalta/tpBrl)*100).toFixed(0) : 0}%)</p>` : ''}
-        </div>`;
-      }).join('');
-    }
 
     // ── News Guard banner ─────────────────────────────────────────────────
     const newsBanner  = document.getElementById('news-guard-banner');
@@ -1340,34 +1206,19 @@
     if (feed.length === 0) {
       feedList.innerHTML = '<p class="text-gray-500 text-sm text-center py-8">Aguardando sinais...</p>';
     } else {
-      const stratShort = {
-        'Donchian Breakout': 'DONCH', 'EMA Pullback': 'EMA',
-        'MACD Momentum': 'MACD',
-      };
-      // Map note text to readable filter block reasons
+      const stratShort = { 'V4:signal': 'V4' };
       const filterReasonMap = {
-        'adx': 'ADX<25',
-        'adx<25': 'ADX<25',
-        'mtf': 'MTF❌',
-        'mtf_fail': 'MTF❌',
-        'multi_timeframe': 'MTF❌',
-        'bb': 'BB-wide',
-        'bb_wide': 'BB-wide',
-        'bollinger': 'BB-wide',
-        'obv': 'OBV❌',
-        'volume': 'Vol❌',
-        'cooldown': 'Cooldown',
-        'circuit': 'CircBrk',
-        'circuit_breaker': 'CircBrk',
-        'slots': 'MaxSlots',
-        'rsi': 'RSI>75',
-        'macd': 'MACD<0',
-        'slope': 'Slope❌',
-        'ema_slope': 'Slope❌',
-        'score': 'Score❌',
-        'regime': 'Bear🚫',
-        'bear': 'Bear🚫',
-        'market_mode': 'Bear🚫',
+        'cooldown':       'Cooldown',
+        'circuit':        'CircBrk',
+        'slots':          'MaxSlots',
+        'score':          'Score❌',
+        'regime':         'Regime🚫',
+        'panic':          'Panic🚫',
+        'vacuum':         'Vacuum🚫',
+        'breadth':        'Breadth🚫',
+        'ev':             'EV<0',
+        'correlation':    'Corr↑',
+        'var':            'VaR↑',
       };
 
       feedList.innerHTML = feed.slice(0, 60).map(f => {
@@ -1497,102 +1348,6 @@
       el('kpi-open-slots').style.color = openCount >= maxSlots ? '#f87171' : openCount >= maxSlots - 1 ? '#fb923c' : '#22d3ee';
       const subOS = el('kpi-open-slots-sub');
       if (subOS) subOS.textContent = openCount >= maxSlots ? '🔴 Cheio' : openCount + ' slots abertos';
-    }
-
-    // ── Tabela por estratégia ─────────────────────────────────────────────
-    const stTable = el('kpi-strategy-table');
-    if (stTable) {
-      const byStrat = (kpis.by_strategy) || {};
-      const stratDefs = [
-        { name: 'Donchian Breakout', icon: '🚀', short: 'Donchian' },
-        { name: 'EMA Pullback',      icon: '📈', short: 'EMA PB'   },
-        { name: 'V4:signal',         icon: '⚙️', short: 'V4'       },
-      ];
-
-      stTable.innerHTML = stratDefs.map(sd => {
-        const d = byStrat[sd.name] || {};
-        const n = d.n || 0;
-
-        // Win Rate — total e recente
-        const wrTot = d.win_rate != null ? (d.win_rate * 100).toFixed(1) + '%' : '—';
-        const recentWr = d.win_rate != null && d.edge_decay != null
-          ? ((d.win_rate + d.edge_decay) * 100).toFixed(1) + '%' : '—';
-        const wrCol = d.win_rate == null ? '#6b7280'
-          : d.win_rate >= 0.55 ? '#4ade80' : d.win_rate >= 0.45 ? '#fb923c' : '#f87171';
-
-        // Profit Factor
-        const pfVal = d.profit_factor != null ? d.profit_factor.toFixed(2) : '—';
-        const pfCol = d.profit_factor == null ? '#6b7280'
-          : d.profit_factor >= 1.5 ? '#4ade80' : d.profit_factor >= 1.0 ? '#fb923c' : '#f87171';
-
-        // Edge Decay
-        let edgeTxt = '—', edgeCol = '#6b7280', edgeIcon = '';
-        if (d.edge_decay != null && n >= 3) {
-          const pct = (d.edge_decay * 100).toFixed(1);
-          edgeIcon = d.edge_decay >= 0.02 ? '▲' : d.edge_decay <= -0.05 ? '▼▼' : d.edge_decay < 0 ? '▼' : '→';
-          edgeTxt  = edgeIcon + ' ' + (d.edge_decay >= 0 ? '+' : '') + pct + '%';
-          edgeCol  = d.edge_decay >= 0.02 ? '#4ade80' : d.edge_decay <= -0.05 ? '#f87171' : d.edge_decay < 0 ? '#fb923c' : '#9ca3af';
-        }
-
-        // Drawdown Contribution
-        const ddC = d.drawdown_contrib != null ? d.drawdown_contrib.toFixed(1) + '%' : '—';
-        const ddCCol = d.drawdown_contrib == null ? '#6b7280'
-          : d.drawdown_contrib >= 60 ? '#f87171' : d.drawdown_contrib >= 30 ? '#fb923c' : '#4ade80';
-
-        // MFE Capture
-        let mfeTxt = '—', mfeCol = '#6b7280';
-        if (d.mfe_capture != null) {
-          mfeTxt = d.mfe_capture.toFixed(1) + '%';
-          mfeCol = d.mfe_capture >= 80 ? '#4ade80' : d.mfe_capture >= 50 ? '#fb923c' : '#f87171';
-        }
-
-        // P&L realizado
-        const pnl    = d.realized_usd || 0;
-        const pnlBrl = pnl * usdBrl;
-        const pnlTxt = n > 0 ? (pnlBrl >= 0 ? '+' : '-') + 'R$ ' + fmtBRL(Math.abs(pnlBrl)) : '—';
-        const pnlCol = pnl > 0 ? '#4ade80' : pnl < 0 ? '#f87171' : '#6b7280';
-
-        // Barra win rate horizontal (40px)
-        const barW = d.win_rate != null ? Math.round(d.win_rate * 40) : 0;
-
-        return `<tr class="border-t border-gray-800/60 hover:bg-gray-800/20 transition-colors">
-          <td class="py-3 pr-3">
-            <div class="flex items-center gap-1.5">
-              <span>${sd.icon}</span>
-              <div>
-                <p class="text-xs font-semibold text-white">${sd.short}</p>
-                <p class="text-[9px] text-gray-600">${n} trades</p>
-              </div>
-            </div>
-          </td>
-          <td class="py-3 px-3 text-center">
-            <p class="text-xs font-bold font-mono" style="color:${wrCol}">${wrTot}</p>
-            <p class="text-[9px] text-gray-500">últ.10: ${recentWr}</p>
-            <div style="width:40px;height:2px;background:#21262d;border-radius:2px;margin:3px auto 0">
-              <div style="width:${barW}px;height:2px;background:${wrCol};border-radius:2px"></div>
-            </div>
-          </td>
-          <td class="py-3 px-3 text-center">
-            <p class="text-xs font-bold font-mono" style="color:${pfCol}">${pfVal}</p>
-            <p class="text-[9px] text-gray-600">${d.wins || 0}W · ${d.losses || 0}L</p>
-          </td>
-          <td class="py-3 px-3 text-center">
-            <p class="text-xs font-bold font-mono" style="color:${edgeCol}">${edgeTxt}</p>
-            <p class="text-[9px] text-gray-600">${n >= 3 ? 'últ.' + Math.min(10,n) + ' vs total' : 'aguardando'}</p>
-          </td>
-          <td class="py-3 px-3 text-center">
-            <p class="text-xs font-bold font-mono" style="color:${ddCCol}">${ddC}</p>
-            <p class="text-[9px] text-gray-600">do DD máx</p>
-          </td>
-          <td class="py-3 px-3 text-center">
-            <p class="text-xs font-bold font-mono" style="color:${mfeCol}">${mfeTxt}</p>
-            <p class="text-[9px] text-gray-600">do potencial TP</p>
-          </td>
-          <td class="py-3 pl-3 text-center">
-            <p class="text-xs font-bold font-mono" style="color:${pnlCol}">${pnlTxt}</p>
-          </td>
-        </tr>`;
-      }).join('');
     }
 
     // ── Market Mode global — header badge + banner ───────────────────────
