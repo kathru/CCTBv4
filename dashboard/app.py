@@ -865,7 +865,7 @@ def _record_trade(side, pair, qty, price, usd, strategy):
 
 
 async def trading_loop():
-    logger.info("Loop independente — 4 estratégias × 25%%, ciclo %ds", CYCLE_INTERVAL)
+    logger.info("V4 Motor Probabilístico — ciclo %ds", CYCLE_INTERVAL)
     loop = asyncio.get_event_loop()
     while True:
         state["cycle"] = _current_cycle()
