@@ -734,12 +734,14 @@
         <span id="regime-${c.sym}" class="regime-neutral text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0">—</span>
       </div>
 
-      <!-- Linha 3: EV + posição aberta -->
+      <!-- Linha 3: EV + ATR Stop + posição aberta -->
       <div class="flex items-center justify-between text-[10px] mb-2">
         <div class="flex items-center gap-2 text-gray-500">
           <span>EV: <span id="v4-ev-${c.sym}" class="font-mono">—</span></span>
+          <span class="text-gray-700">·</span>
+          <span id="atr-stop-inline-${c.sym}" class="text-orange-400/70 font-mono">ATR —</span>
           <span id="holdings-${c.sym}" class="hidden text-gray-400">
-            <span id="qty-${c.sym}" class="${c.color} font-mono font-bold">0</span> ${c.sym}
+            · <span id="qty-${c.sym}" class="${c.color} font-mono font-bold">0</span> ${c.sym}
           </span>
         </div>
         <span id="chg-entry-${c.sym}" class="font-mono font-bold text-gray-500">—</span>
@@ -938,6 +940,17 @@
         const regime = v4d.regime || (sig ? inferRegime(sig) : 'UNKNOWN');
         regimeEl.textContent = regimeLabel(regime);
         regimeEl.className   = regimeCls(regime) + ' text-[9px] font-bold px-2 py-0.5 rounded-full shrink-0';
+      }
+
+      // ATR Stop inline — sempre visível
+      const atrInlineEl = document.getElementById('atr-stop-inline-' + c.sym);
+      if (atrInlineEl && sig) {
+        if (sig.atr_sl_pct != null) {
+          atrInlineEl.textContent = `ATR ${sig.atr_sl_pct.toFixed(1)}%`;
+          atrInlineEl.style.color = sig.atr_sl_pct > 5 ? '#f87171' : sig.atr_sl_pct > 3 ? '#fb923c' : '#fdba74';
+        } else {
+          atrInlineEl.textContent = 'ATR —';
+        }
       }
 
       // Posição aberta — holdings + variação + SL/TP
