@@ -382,29 +382,6 @@
       </div>
     </div>
 
-    <!-- ── Evolução + Distribuição ── -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div class="card p-5 lg:col-span-2">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="font-semibold text-white">Evolução do Portfolio</h3>
-          <div class="flex gap-1 overflow-x-auto scrollbar-none" id="period-selector">
-            <button onclick="setPeriod('1m')"  data-period="1m"  class="period-btn shrink-0 px-2.5 py-1 rounded text-xs font-semibold">1m</button>
-            <button onclick="setPeriod('5m')"  data-period="5m"  class="period-btn shrink-0 px-2.5 py-1 rounded text-xs font-semibold">5m</button>
-            <button onclick="setPeriod('15m')" data-period="15m" class="period-btn shrink-0 px-2.5 py-1 rounded text-xs font-semibold">15m</button>
-            <button onclick="setPeriod('1h')"  data-period="1h"  class="period-btn active shrink-0 px-2.5 py-1 rounded text-xs font-semibold">1h</button>
-            <button onclick="setPeriod('6h')"  data-period="6h"  class="period-btn shrink-0 px-2.5 py-1 rounded text-xs font-semibold">6h</button>
-            <button onclick="setPeriod('1d')"  data-period="1d"  class="period-btn shrink-0 px-2.5 py-1 rounded text-xs font-semibold">1d</button>
-          </div>
-        </div>
-        <canvas id="portfolioChart" height="120"></canvas>
-      </div>
-      <div class="card p-5">
-        <h3 class="font-semibold text-white mb-4">Distribuição</h3>
-        <canvas id="allocationChart" height="180"></canvas>
-        <div id="allocation-legend" class="mt-4 space-y-2 text-xs text-gray-400"></div>
-      </div>
-    </div>
-
     <!-- ── Histórico de Trades · Feed de Sinais ── -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
@@ -443,6 +420,29 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- ── Evolução + Distribuição ── -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="card p-5 lg:col-span-2">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-semibold text-white">Evolução do Portfolio</h3>
+          <div class="flex gap-1 overflow-x-auto scrollbar-none" id="period-selector">
+            <button onclick="setPeriod('1m')"  data-period="1m"  class="period-btn shrink-0 px-2.5 py-1 rounded text-xs font-semibold">1m</button>
+            <button onclick="setPeriod('5m')"  data-period="5m"  class="period-btn shrink-0 px-2.5 py-1 rounded text-xs font-semibold">5m</button>
+            <button onclick="setPeriod('15m')" data-period="15m" class="period-btn shrink-0 px-2.5 py-1 rounded text-xs font-semibold">15m</button>
+            <button onclick="setPeriod('1h')"  data-period="1h"  class="period-btn active shrink-0 px-2.5 py-1 rounded text-xs font-semibold">1h</button>
+            <button onclick="setPeriod('6h')"  data-period="6h"  class="period-btn shrink-0 px-2.5 py-1 rounded text-xs font-semibold">6h</button>
+            <button onclick="setPeriod('1d')"  data-period="1d"  class="period-btn shrink-0 px-2.5 py-1 rounded text-xs font-semibold">1d</button>
+          </div>
+        </div>
+        <canvas id="portfolioChart" height="120"></canvas>
+      </div>
+      <div class="card p-5">
+        <h3 class="font-semibold text-white mb-4">Distribuição</h3>
+        <canvas id="allocationChart" height="180"></canvas>
+        <div id="allocation-legend" class="mt-4 space-y-2 text-xs text-gray-400"></div>
+      </div>
     </div>
 
     <!-- ── Realidade Operacional ── -->
