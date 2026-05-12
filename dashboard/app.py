@@ -1069,11 +1069,17 @@ async def trading_loop():
                     p: strategy_slots.get(f"V4:{p}", _empty_slot())
                     for p in PAIRS
                 }
+                _breadth_score = _breadth.score if _breadth else 1.0
                 try:
+                    import functools as _ft
                     _v4_decision = await asyncio.wait_for(
-                        loop.run_in_executor(None, v4.evaluate,
+                        loop.run_in_executor(None, _ft.partial(
+                            v4.evaluate,
                             pair, candles_1h, candles_6h, _closes_map,
-                            engine, _v4_open_slots, _v4_slot if _v4_slot.get("qty", 0) > 0 else None),
+                            engine, _v4_open_slots,
+                            _v4_slot if _v4_slot.get("qty", 0) > 0 else None,
+                            _breadth_score,
+                        )),
                         timeout=12.0
                     )
                 except Exception as _v4_err:
@@ -1174,14 +1180,18 @@ async def trading_loop():
                     _v4_sell_usd = _v4_qty * price
                     _v4_entry = _v4_slot.get("entry", price)
                     _v4_pnl   = (_v4_sell_usd - _v4_slot.get("entry_usd", _v4_sell_usd)) * (1 - TAKER_FEE)
+                    _exit_type  = _v4_decision.get("exit_type", "signal")
+                    _exit_tier  = _v4_decision.get("thesis_tier", "")
+                    _exit_label = f"V4:{_exit_type}" + (f":{_exit_tier}" if _exit_tier else "")
                     if engine.sell(
-                        symbol, _v4_qty, price, "V4:signal",
+                        symbol, _v4_qty, price, _exit_label,
                         atr_pct=_v4_atr_pct, spread_pct=_v4_spread,
                         score=_v4_score, regime=_v4_regime,
                     ):
                         strategy_slots[_v4_key] = _empty_slot()
-                        _record_trade("SELL", pair, _v4_qty, price, _v4_sell_usd, "V4:signal")
-                        logger.info(f"[V4][{pair}] ✅ SELL ${_v4_sell_usd:.2f} @ ${price:,.2f} | pnl={_v4_pnl:.2f}")
+                        _record_trade("SELL", pair, _v4_qty, price, _v4_sell_usd, _exit_label)
+                        logger.info(f"[V4][{pair}] ✅ SELL ${_v4_sell_usd:.2f} @ ${price:,.2f} "
+                                    f"| pnl={_v4_pnl:.2f} | {_exit_label} | {_v4_decision.get('reason','')}")
 
                 pair_signals = {}
                 pair_score   = state.get("v4", {}).get(pair, {}).get("score", 0.0)

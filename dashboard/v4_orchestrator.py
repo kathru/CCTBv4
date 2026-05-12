@@ -63,13 +63,14 @@ class V4Orchestrator:
 
     def evaluate(
         self,
-        pair:         str,
-        candles_1h:   list,
-        candles_6h:   list,
-        closes_map:   dict,
-        engine,                     # PaperTradingEngine
-        open_slots:   dict = None,
+        pair:          str,
+        candles_1h:    list,
+        candles_6h:    list,
+        closes_map:    dict,
+        engine,                      # PaperTradingEngine
+        open_slots:    dict = None,
         existing_slot: dict = None,
+        breadth_score: float = 1.0,  # market breadth 0–1 (vem do MarketBreadth engine)
     ) -> dict:
         """
         Roda a pipeline V4 completa para um par.
@@ -144,6 +145,7 @@ class V4Orchestrator:
             market_ctx=market_ctx,
             regime_result=regime_result,
             signal=signal,
+            breadth_score=breadth_score,
         )
         if sell_decision:
             return sell_decision
@@ -292,16 +294,122 @@ class V4Orchestrator:
             "latency_ms":      int((time.time() - t0) * 1000),
         }
 
+    # ── Thesis Invalidation ───────────────────────────────────────────────────
+    #
+    # Separação conceitual:
+    #   Saída por lucro  → score reverso acima do entry (optional profit-taking)
+    #   Saída por tese   → a razão de estar na posição deixou de existir
+    #
+    # O SL é proteção final de preço — não é o único mecanismo autorizado
+    # a realizar prejuízo. Se a tese morreu, sair antes do SL é institucional.
+    # "O mercado não sabe seu preço de entrada."
+    #
+    # Tiers de invalidação:
+    #   HARD  — fecha imediatamente, independente do preço
+    #   STRONG — fecha se não demasiado longe do entry (< 50% do SL)
+    #   SOFT  — fecha se 2+ condições confirmam (evita saída por ruído)
+
+    def _check_thesis_invalidation(
+        self,
+        current_price: float,
+        entry_price:   float,
+        sl_pct:        float,
+        regime:        str,
+        signal:        dict,
+        market_ctx:    dict,
+        breadth_score: float = 1.0,
+    ) -> tuple:
+        """
+        Avalia se a tese da posição foi invalidada.
+
+        Retorna (invalidated: bool, tier: str, reason: str).
+
+        Tier HARD   → sai independente do preço vs entry
+        Tier STRONG → sai se perda < 50% do SL definido
+        Tier SOFT   → sai apenas com 2+ condições confirmadas
+        """
+        loss_pct     = (entry_price - current_price) / entry_price  # positivo = prejuízo
+        half_sl      = sl_pct * 0.50   # 50% do SL como limite para STRONG
+        taker_imbal  = market_ctx.get("taker_ratio", {}).get("imbalance", 0.0)
+        sig_score    = signal.get("score", 0.5)
+        sig_dir      = signal.get("direction", "neutral")
+        sig_conf     = signal.get("confidence", 0.5)
+
+        # ── TIER HARD: fecha sempre ──────────────────────────────────────────
+        # 1. Regime sistêmico — liquidação em cascata
+        if regime == "PANIC_LIQUIDATION":
+            return True, "HARD", "regime PANIC_LIQUIDATION — liquidação sistêmica"
+
+        # 2. Market breadth colapso severo — sem compradores no mercado
+        if breadth_score < 0.25:
+            return True, "HARD", f"breadth colapsou: score={breadth_score:.2f} (< 0.25 = DANGER extremo)"
+
+        # ── TIER STRONG: fecha se perda ainda contida ────────────────────────
+        # 3. HIGH_CORRELATION_RISK — correlação elevada amplifica qualquer move
+        if regime == "HIGH_CORRELATION_RISK" and loss_pct > 0 and loss_pct < half_sl:
+            return True, "STRONG", f"HIGH_CORRELATION_RISK — saindo antes do contágio alastrar (loss={loss_pct:.2%})"
+
+        # 4. LIQUIDITY_VACUUM — spread explodiu, próxima venda será muito pior
+        if regime == "LIQUIDITY_VACUUM" and loss_pct < half_sl:
+            return True, "STRONG", f"LIQUIDITY_VACUUM — liquidez evaporou, sai agora (loss={loss_pct:.2%})"
+
+        # 5. Orderflow virou agressivamente vendedor (institucional distribuindo)
+        if taker_imbal < -0.35 and sig_dir == "short" and sig_score > 0.65:
+            return True, "STRONG", (
+                f"orderflow agressivamente vendedor: taker={taker_imbal:.2f} "
+                f"+ sinal reverso {sig_score:.2f}"
+            )
+
+        # 6. Sinal reverso de alta convicção — tese direcional inverteu
+        if sig_dir == "short" and sig_score > 0.72 and sig_conf > 0.65:
+            return True, "STRONG", (
+                f"sinal reverso alta convicção: score={sig_score:.3f} "
+                f"conf={sig_conf:.2f} — tese direcional invertida"
+            )
+
+        # ── TIER SOFT: fecha com 2+ condições ───────────────────────────────
+        soft_signals = []
+
+        if sig_dir == "short" and sig_score > 0.64:
+            soft_signals.append(f"sinal_reverso={sig_score:.2f}")
+
+        if breadth_score < 0.35:
+            soft_signals.append(f"breadth={breadth_score:.2f}")
+
+        if taker_imbal < -0.20:
+            soft_signals.append(f"taker={taker_imbal:.2f}")
+
+        if regime in ("TREND_EXHAUSTION", "MEAN_REVERTING_CHOP") and loss_pct > sl_pct * 0.30:
+            soft_signals.append(f"regime={regime}+loss={loss_pct:.2%}")
+
+        # EV de manter a posição: se score reverso implica EV negativo de continuar
+        holding_ev = signal.get("expected_value", 0.0)
+        if holding_ev < -0.015:
+            soft_signals.append(f"ev_holding={holding_ev:.4f}")
+
+        if len(soft_signals) >= 2:
+            return True, "SOFT", "tese invalidada: " + " + ".join(soft_signals)
+
+        return False, "", ""
+
     def _check_exit(
         self,
-        existing_slot: Optional[dict],
-        pair: str,
-        candles_1h: list,
-        market_ctx: dict,
+        existing_slot:  Optional[dict],
+        pair:           str,
+        candles_1h:     list,
+        market_ctx:     dict,
         regime_result,
-        signal: dict,
+        signal:         dict,
+        breadth_score:  float = 1.0,
     ) -> Optional[dict]:
-        """Verifica se posição aberta deve ser fechada."""
+        """
+        Verifica se posição aberta deve ser fechada.
+
+        Dois caminhos distintos:
+          A) Thesis invalidation → fecha mesmo abaixo do entry
+          B) Profit-taking       → fecha acima do entry com sinal reverso moderado
+          C) SL / Trailing       → proteção final de preço
+        """
         if not existing_slot or existing_slot.get("qty", 0) <= 0:
             return None
 
@@ -314,61 +422,74 @@ class V4Orchestrator:
         peak_price    = existing_slot.get("peak", current_price)
         sl_pct        = existing_slot.get("sl_pct", 0.03)
         current_sl    = existing_slot.get("sl_level", entry_price * (1 - sl_pct))
+        regime        = regime_result.regime
+        pnl_pct       = (current_price - entry_price) / entry_price
 
-        # Regime de pânico → fecha imediatamente
-        if regime_result.regime == "PANIC_LIQUIDATION":
+        # ── A. Thesis Invalidation ───────────────────────────────────────────
+        # Tese morreu → sai independente do preço de entrada
+        invalidated, tier, inv_reason = self._check_thesis_invalidation(
+            current_price=current_price,
+            entry_price=entry_price,
+            sl_pct=sl_pct,
+            regime=regime,
+            signal=signal,
+            market_ctx=market_ctx,
+            breadth_score=breadth_score,
+        )
+        if invalidated:
             return {
-                "decision": "SELL",
-                "reason":   "PANIC_LIQUIDATION — fecha posição",
-                "score":    signal["score"],
-                "size_pct": 0.0,
-                "regime":   regime_result,
-                "signal":   signal,
-                "context":  market_ctx,
+                "decision":            "SELL",
+                "reason":              f"[{tier}] {inv_reason} | pnl={pnl_pct:+.2%}",
+                "exit_type":           "thesis_invalidation",
+                "thesis_tier":         tier,
+                "score":               signal["score"],
+                "size_pct":            0.0,
+                "regime":              regime_result,
+                "signal":              signal,
+                "context":             market_ctx,
             }
 
-        # Sinal reverso forte → fecha APENAS se estiver no lucro
-        # Regra institucional: sinal não pode forçar venda abaixo do preço de entrada.
-        # Somente o SL é autorizado a fechar com prejuízo — o sinal só realiza lucro.
+        # ── B. Profit-taking por sinal reverso (acima do entry) ──────────────
+        # Score reverso moderado (0.68+) → realiza lucro se estiver positivo.
+        # Abaixo do entry: não age (a não ser que tese tenha sido invalidada acima).
         if signal["direction"] == "short" and signal["score"] > 0.68:
             if current_price > entry_price:
-                gain_pct = (current_price - entry_price) / entry_price * 100
                 return {
-                    "decision": "SELL",
-                    "reason":   f"Sinal reverso com lucro: +{gain_pct:.2f}% | score={signal['score']:.3f}",
-                    "score":    signal["score"],
-                    "size_pct": 0.0,
-                    "regime":   regime_result,
-                    "signal":   signal,
-                    "context":  market_ctx,
+                    "decision":   "SELL",
+                    "reason":     f"profit-taking: sinal reverso score={signal['score']:.3f} | pnl={pnl_pct:+.2%}",
+                    "exit_type":  "profit_taking",
+                    "score":      signal["score"],
+                    "size_pct":   0.0,
+                    "regime":     regime_result,
+                    "signal":     signal,
+                    "context":    market_ctx,
                 }
-            # Abaixo do entry: mantém posição, SL cuidará da saída
-            existing_slot["sl_level"] = current_sl  # garante SL atualizado
+            # Abaixo do entry mas sem invalidação de tese → mantém, SL cuida
 
-        # Atualiza trailing stop
+        # ── C. Trailing stop / SL ────────────────────────────────────────────
         sl_update = update_trailing_stop(
             current_price=current_price,
             entry_price=entry_price,
             peak_price=peak_price,
             current_sl=current_sl,
             sl_pct=sl_pct,
-            regime=regime_result.regime,
+            regime=regime,
         )
 
-        # Stop atingido
         if current_price <= sl_update["sl"]:
             return {
-                "decision": "SELL",
-                "reason":   f"SL atingido: price={current_price:.2f} sl={sl_update['sl']:.2f} ({sl_update['action']})",
-                "score":    signal["score"],
-                "size_pct": 0.0,
-                "sl_level": sl_update["sl"],
-                "regime":   regime_result,
-                "signal":   signal,
-                "context":  market_ctx,
+                "decision":  "SELL",
+                "reason":    f"SL: price={current_price:.2f} sl={sl_update['sl']:.2f} ({sl_update['action']}) | pnl={pnl_pct:+.2%}",
+                "exit_type": "stop_loss",
+                "score":     signal["score"],
+                "size_pct":  0.0,
+                "sl_level":  sl_update["sl"],
+                "regime":    regime_result,
+                "signal":    signal,
+                "context":   market_ctx,
             }
 
-        # Atualiza sl_level na slot (retorna None = não fecha, mas atualiza SL)
+        # Atualiza SL e peak — nenhuma saída neste ciclo
         existing_slot["sl_level"] = sl_update["sl"]
         existing_slot["peak"]     = max(peak_price, current_price)
         return None
