@@ -133,9 +133,16 @@
         <p id="total-fees-usd" class="text-[10px] text-gray-500 mt-0.5"><span id="current-fee-rate">—</span>/trade</p>
       </div>
       <div class="card px-4 py-3">
-        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Trades</p>
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Trades</p>
         <p id="trade-count" class="text-lg font-bold text-white leading-tight">0</p>
-        <p class="text-[10px] text-gray-500 mt-0.5">Paper trades</p>
+        <div class="flex items-center gap-2 mt-1 text-[10px]">
+          <span><span style="color:#4ade80">▲</span> <span id="trade-buys" class="text-gray-400">0</span></span>
+          <span class="text-gray-700">|</span>
+          <span><span style="color:#f87171">↓</span> <span id="trade-sells" class="text-gray-400">0</span></span>
+        </div>
+        <div class="mt-1 text-[10px] text-gray-500">
+          Hoje: <span id="trade-today" class="font-mono text-gray-300">0</span><span class="text-gray-700">/<span id="trade-max" class="text-gray-600">20</span></span>
+        </div>
       </div>
       <div class="card px-4 py-3">
         <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Fear &amp; Greed</p>
@@ -910,6 +917,18 @@
     const totalTrades = (s.kpis || {}).total_trades ?? (s.trades || []).length;
     document.getElementById('trade-count').textContent = totalTrades;
     document.getElementById('trade-badge').textContent = totalTrades + ' trades';
+
+    // Buys / Sells totais + trades hoje
+    const allT = s.trades || [];
+    const totalBuys  = allT.filter(t => t.side === 'BUY').length;
+    const totalSells = allT.filter(t => t.side === 'SELL').length;
+    const todayTrades = s.trades_today ?? 0;
+    const maxTrades   = s.max_daily_trades ?? 20;
+    const todayColor  = todayTrades >= maxTrades * 0.9 ? '#f87171' : todayTrades >= maxTrades * 0.6 ? '#fb923c' : '#d1d5db';
+    if (document.getElementById('trade-buys'))  document.getElementById('trade-buys').textContent  = totalBuys;
+    if (document.getElementById('trade-sells')) document.getElementById('trade-sells').textContent = totalSells;
+    if (document.getElementById('trade-today')) { document.getElementById('trade-today').textContent = todayTrades; document.getElementById('trade-today').style.color = todayColor; }
+    if (document.getElementById('trade-max'))   document.getElementById('trade-max').textContent   = maxTrades;
 
     const feesUsd = p.total_fees_usd || 0;
     document.getElementById('total-fees').textContent = 'R$ ' + fmtBRL(feesUsd * usdBrl);
