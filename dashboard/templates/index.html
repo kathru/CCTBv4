@@ -742,7 +742,7 @@
             <span class="text-gray-600 ml-0.5">${c.sym}</span>
           </span>
           <span id="holdings-sep-${c.sym}" class="hidden text-gray-700">·</span>
-          <span>EV: <span id="v4-ev-${c.sym}" class="font-mono">—</span></span>
+          <span>EV: <span id="v4-ev-${c.sym}" class="font-mono">—</span> <span id="v4-dir-${c.sym}" class="font-semibold text-gray-600">—</span></span>
           <span class="text-gray-700">·</span>
           <span id="atr-stop-inline-${c.sym}" class="text-orange-400/70 font-mono">ATR —</span>
         </div>
@@ -934,6 +934,14 @@
       if (evEl) {
         evEl.textContent = ev != null ? (ev >= 0 ? '+' : '') + ev.toFixed(4) : '—';
         evEl.style.color = ev == null ? '#6b7280' : ev > 0 ? '#4ade80' : '#f87171';
+      }
+      const dirEl = document.getElementById('v4-dir-' + c.sym);
+      if (dirEl) {
+        const dir = v4d.direction || 'neutral';
+        const dirMap = { long: { label: '▲ long', color: '#4ade80' }, short: { label: '▼ short', color: '#f87171' }, neutral: { label: '— neutro', color: '#4b5563' } };
+        const dm = dirMap[dir] || dirMap.neutral;
+        dirEl.textContent = dm.label;
+        dirEl.style.color = dm.color;
       }
 
       // Regime badge
