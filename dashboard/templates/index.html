@@ -204,6 +204,62 @@
         <span id="regime-banner-text" class="text-sm font-bold">↔ CHOP — Operação Conservadora</span>
         <span class="text-[10px] text-gray-400">Market Regime Engine</span>
       </div>
+      <!-- V4 Engine Panel -->
+      <div class="mb-3 rounded-lg border border-gray-800 bg-gray-900/60 p-3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">V4 — Motor Probabilístico</span>
+          <span id="v4-risk-action" class="text-[9px] px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">normal</span>
+        </div>
+        <!-- Risk Engine row -->
+        <div class="grid grid-cols-4 gap-2 mb-2">
+          <div class="text-center">
+            <div class="text-[9px] text-gray-500 mb-0.5">VaR Portfolio</div>
+            <div id="v4-var" class="text-xs font-bold text-white">—</div>
+          </div>
+          <div class="text-center">
+            <div class="text-[9px] text-gray-500 mb-0.5">P(Ruína)</div>
+            <div id="v4-ruin" class="text-xs font-bold text-white">—</div>
+          </div>
+          <div class="text-center">
+            <div class="text-[9px] text-gray-500 mb-0.5">Sharpe Rolling</div>
+            <div id="v4-sharpe" class="text-xs font-bold text-white">—</div>
+          </div>
+          <div class="text-center">
+            <div class="text-[9px] text-gray-500 mb-0.5">Win Rate 7d</div>
+            <div id="v4-winrate" class="text-xs font-bold text-white">—</div>
+          </div>
+        </div>
+        <!-- V4 scores por par -->
+        <div class="grid grid-cols-3 gap-2 mb-2">
+          <div id="v4-btc" class="rounded bg-gray-800/60 px-2 py-1.5 text-center">
+            <div class="text-[9px] text-gray-500 mb-0.5">BTC Score</div>
+            <div class="text-sm font-bold text-white" id="v4-btc-score">—</div>
+            <div class="text-[9px]" id="v4-btc-regime">—</div>
+            <div class="text-[9px] text-gray-600" id="v4-btc-reason">—</div>
+          </div>
+          <div id="v4-eth" class="rounded bg-gray-800/60 px-2 py-1.5 text-center">
+            <div class="text-[9px] text-gray-500 mb-0.5">ETH Score</div>
+            <div class="text-sm font-bold text-white" id="v4-eth-score">—</div>
+            <div class="text-[9px]" id="v4-eth-regime">—</div>
+            <div class="text-[9px] text-gray-600" id="v4-eth-reason">—</div>
+          </div>
+          <div id="v4-sol" class="rounded bg-gray-800/60 px-2 py-1.5 text-center">
+            <div class="text-[9px] text-gray-500 mb-0.5">SOL Score</div>
+            <div class="text-sm font-bold text-white" id="v4-sol-score">—</div>
+            <div class="text-[9px]" id="v4-sol-regime">—</div>
+            <div class="text-[9px] text-gray-600" id="v4-sol-reason">—</div>
+          </div>
+        </div>
+        <!-- Meta-Layer weights -->
+        <div class="text-[9px] text-gray-600 flex flex-wrap gap-x-3 gap-y-0.5" id="v4-meta-weights">
+          <span>Vol Exp: <span class="text-indigo-400" id="meta-vol-exp">—</span></span>
+          <span>Mkt Struct: <span class="text-indigo-400" id="meta-mkt-str">—</span></span>
+          <span>Orderflow: <span class="text-indigo-400" id="meta-orderflow">—</span></span>
+          <span>Rel Strength: <span class="text-indigo-400" id="meta-rel-str">—</span></span>
+        </div>
+        <!-- Alerts -->
+        <div id="v4-alerts" class="hidden mt-1.5 text-[9px] text-red-400 flex flex-wrap gap-1"></div>
+      </div>
       <!-- Bear Signals — visível apenas quando há sinais ativos -->
       <div id="bear-signals-row" class="hidden mb-3 flex flex-wrap gap-1.5"></div>
       <!-- Regras de operação -->
@@ -1024,6 +1080,81 @@
       if (multEl) {
         multEl.textContent = '×' + mbMult.toFixed(1);
         multEl.style.color = mbMult >= 1.0 ? '#4ade80' : mbMult >= 0.7 ? '#fb923c' : '#f87171';
+      }
+    }
+
+    // ── V4 Engine Panel ───────────────────────────────────────────────────
+    const v4r = s.v4_risk || {};
+    const v4d = s.v4     || {};
+
+    // Risk action badge
+    const v4ActionEl = document.getElementById('v4-risk-action');
+    if (v4ActionEl) {
+      const a = v4r.action || 'normal';
+      v4ActionEl.textContent = a;
+      v4ActionEl.className = 'text-[9px] px-2 py-0.5 rounded-full ' + (
+        a === 'normal'          ? 'bg-green-900 text-green-300' :
+        a === 'reduce_sizing'   ? 'bg-yellow-900 text-yellow-300' :
+        a === 'suspend_entries' ? 'bg-orange-900 text-orange-300' :
+        'bg-red-900 text-red-300'
+      );
+    }
+
+    // Risk metrics
+    const v4VarEl    = document.getElementById('v4-var');
+    const v4RuinEl   = document.getElementById('v4-ruin');
+    const v4SharpeEl = document.getElementById('v4-sharpe');
+    const v4WrEl     = document.getElementById('v4-winrate');
+    if (v4VarEl)    { const v = v4r.var_pct; v4VarEl.textContent = v != null ? (v*100).toFixed(2)+'%' : '—'; v4VarEl.style.color = v > 0.04 ? '#f87171' : '#4ade80'; }
+    if (v4RuinEl)   { const v = v4r.ruin_prob; v4RuinEl.textContent = v != null ? (v*100).toFixed(1)+'%' : '—'; v4RuinEl.style.color = v > 0.05 ? '#f87171' : '#4ade80'; }
+    if (v4SharpeEl) { const v = v4r.sharpe; v4SharpeEl.textContent = v != null ? v.toFixed(2) : '—'; v4SharpeEl.style.color = v < 0.5 ? '#f87171' : v < 1.0 ? '#fb923c' : '#4ade80'; }
+    if (v4WrEl)     { const v = v4r.winrate_7d; v4WrEl.textContent = v != null ? (v*100).toFixed(0)+'%' : '—'; v4WrEl.style.color = v < 0.45 ? '#f87171' : v < 0.55 ? '#fb923c' : '#4ade80'; }
+
+    // V4 per-pair scores
+    const pairMap = { 'BTC-USD': 'btc', 'ETH-USD': 'eth', 'SOL-USD': 'sol' };
+    Object.entries(pairMap).forEach(([pair, key]) => {
+      const pd = v4d[pair] || {};
+      const scoreEl  = document.getElementById(`v4-${key}-score`);
+      const regimeEl = document.getElementById(`v4-${key}-regime`);
+      const reasonEl = document.getElementById(`v4-${key}-reason`);
+      if (scoreEl) {
+        const sc = pd.score;
+        scoreEl.textContent = sc != null ? (sc*100).toFixed(0)+'%' : '—';
+        scoreEl.style.color = sc >= 0.68 ? '#4ade80' : sc >= 0.55 ? '#fb923c' : '#9ca3af';
+      }
+      if (regimeEl) {
+        const r = pd.regime || '—';
+        const dec = pd.decision || 'HOLD';
+        regimeEl.textContent = r.replace('_',' ');
+        regimeEl.style.color = dec === 'BUY' ? '#4ade80' : dec === 'SELL' ? '#f87171' : '#9ca3af';
+      }
+      if (reasonEl) {
+        const reason = (pd.reason || '').substring(0, 40);
+        reasonEl.textContent = reason || '—';
+      }
+    });
+
+    // Meta-Layer weights
+    const meta = (v4r.meta || {}).weights || {};
+    const mVolEl = document.getElementById('meta-vol-exp');
+    const mMktEl = document.getElementById('meta-mkt-str');
+    const mOrdEl = document.getElementById('meta-orderflow');
+    const mRelEl = document.getElementById('meta-rel-str');
+    if (mVolEl) mVolEl.textContent = meta.volatility_expansion != null ? (meta.volatility_expansion*100).toFixed(0)+'%' : '—';
+    if (mMktEl) mMktEl.textContent = meta.market_structure    != null ? (meta.market_structure*100).toFixed(0)+'%' : '—';
+    if (mOrdEl) mOrdEl.textContent = meta.orderflow           != null ? (meta.orderflow*100).toFixed(0)+'%' : '—';
+    if (mRelEl) mRelEl.textContent = meta.relative_strength   != null ? (meta.relative_strength*100).toFixed(0)+'%' : '—';
+
+    // Alerts
+    const v4AlertsEl = document.getElementById('v4-alerts');
+    if (v4AlertsEl) {
+      const alerts = v4r.alerts || [];
+      if (alerts.length > 0) {
+        v4AlertsEl.classList.remove('hidden');
+        v4AlertsEl.innerHTML = alerts.map(a => `<span class="bg-red-900/40 px-1.5 py-0.5 rounded">${a}</span>`).join('');
+      } else {
+        v4AlertsEl.classList.add('hidden');
+        v4AlertsEl.innerHTML = '';
       }
     }
 
