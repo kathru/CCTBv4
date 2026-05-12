@@ -160,60 +160,77 @@
         <span class="text-[10px] text-gray-400">Market Regime Engine</span>
       </div>
       <!-- V4 Engine Panel -->
-      <div class="mb-3 rounded-lg border border-gray-800 bg-gray-900/60 p-3">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">V4 — Motor Probabilístico</span>
-          <span id="v4-risk-action" class="text-[9px] px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">normal</span>
+      <div class="mb-4 rounded-xl border border-indigo-500/20 bg-gray-900/70 overflow-hidden">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-indigo-400 pulse-dot"></span>
+            <span class="text-sm font-bold text-indigo-400 tracking-wide">V4 — Motor Probabilístico</span>
+          </div>
+          <span id="v4-risk-action" class="text-xs font-bold px-3 py-1 rounded-full bg-gray-700 text-gray-300">normal</span>
         </div>
-        <!-- Risk Engine row -->
-        <div class="grid grid-cols-4 gap-2 mb-2">
-          <div class="text-center">
-            <div class="text-[9px] text-gray-500 mb-0.5">VaR Portfolio</div>
-            <div id="v4-var" class="text-xs font-bold text-white">—</div>
+
+        <!-- Risk Engine — 4 métricas grandes -->
+        <div class="grid grid-cols-4 divide-x divide-gray-800 border-b border-gray-800">
+          <div class="px-4 py-3 text-center">
+            <div class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">VaR Portfolio</div>
+            <div id="v4-var" class="text-xl font-bold font-mono text-white">—</div>
           </div>
-          <div class="text-center">
-            <div class="text-[9px] text-gray-500 mb-0.5">P(Ruína)</div>
-            <div id="v4-ruin" class="text-xs font-bold text-white">—</div>
+          <div class="px-4 py-3 text-center">
+            <div class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">P(Ruína)</div>
+            <div id="v4-ruin" class="text-xl font-bold font-mono text-white">—</div>
           </div>
-          <div class="text-center">
-            <div class="text-[9px] text-gray-500 mb-0.5">Sharpe Rolling</div>
-            <div id="v4-sharpe" class="text-xs font-bold text-white">—</div>
+          <div class="px-4 py-3 text-center">
+            <div class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Sharpe Rolling</div>
+            <div id="v4-sharpe" class="text-xl font-bold font-mono text-white">—</div>
           </div>
-          <div class="text-center">
-            <div class="text-[9px] text-gray-500 mb-0.5">Win Rate 7d</div>
-            <div id="v4-winrate" class="text-xs font-bold text-white">—</div>
-          </div>
-        </div>
-        <!-- V4 scores por par -->
-        <div class="grid grid-cols-3 gap-2 mb-2">
-          <div id="v4-btc" class="rounded bg-gray-800/60 px-2 py-1.5 text-center">
-            <div class="text-[9px] text-gray-500 mb-0.5">BTC Score</div>
-            <div class="text-sm font-bold text-white" id="v4-btc-score">—</div>
-            <div class="text-[9px]" id="v4-btc-regime">—</div>
-            <div class="text-[9px] text-gray-600" id="v4-btc-reason">—</div>
-          </div>
-          <div id="v4-eth" class="rounded bg-gray-800/60 px-2 py-1.5 text-center">
-            <div class="text-[9px] text-gray-500 mb-0.5">ETH Score</div>
-            <div class="text-sm font-bold text-white" id="v4-eth-score">—</div>
-            <div class="text-[9px]" id="v4-eth-regime">—</div>
-            <div class="text-[9px] text-gray-600" id="v4-eth-reason">—</div>
-          </div>
-          <div id="v4-sol" class="rounded bg-gray-800/60 px-2 py-1.5 text-center">
-            <div class="text-[9px] text-gray-500 mb-0.5">SOL Score</div>
-            <div class="text-sm font-bold text-white" id="v4-sol-score">—</div>
-            <div class="text-[9px]" id="v4-sol-regime">—</div>
-            <div class="text-[9px] text-gray-600" id="v4-sol-reason">—</div>
+          <div class="px-4 py-3 text-center">
+            <div class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Win Rate 7d</div>
+            <div id="v4-winrate" class="text-xl font-bold font-mono text-white">—</div>
           </div>
         </div>
-        <!-- Meta-Layer weights -->
-        <div class="text-[9px] text-gray-600 flex flex-wrap gap-x-3 gap-y-0.5" id="v4-meta-weights">
-          <span>Vol Exp: <span class="text-indigo-400" id="meta-vol-exp">—</span></span>
-          <span>Mkt Struct: <span class="text-indigo-400" id="meta-mkt-str">—</span></span>
-          <span>Orderflow: <span class="text-indigo-400" id="meta-orderflow">—</span></span>
-          <span>Rel Strength: <span class="text-indigo-400" id="meta-rel-str">—</span></span>
+
+        <!-- Scores por par — 3 colunas -->
+        <div class="grid grid-cols-3 divide-x divide-gray-800 border-b border-gray-800">
+          <div id="v4-btc" class="px-4 py-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-gray-300">BTC</span>
+              <span id="v4-btc-score" class="text-lg font-bold font-mono text-white">—</span>
+            </div>
+            <div id="v4-btc-regime" class="text-[10px] font-semibold text-gray-400 mb-1">—</div>
+            <div id="v4-btc-reason" class="text-[9px] text-gray-600 truncate">—</div>
+          </div>
+          <div id="v4-eth" class="px-4 py-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-gray-300">ETH</span>
+              <span id="v4-eth-score" class="text-lg font-bold font-mono text-white">—</span>
+            </div>
+            <div id="v4-eth-regime" class="text-[10px] font-semibold text-gray-400 mb-1">—</div>
+            <div id="v4-eth-reason" class="text-[9px] text-gray-600 truncate">—</div>
+          </div>
+          <div id="v4-sol" class="px-4 py-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-gray-300">SOL</span>
+              <span id="v4-sol-score" class="text-lg font-bold font-mono text-white">—</span>
+            </div>
+            <div id="v4-sol-regime" class="text-[10px] font-semibold text-gray-400 mb-1">—</div>
+            <div id="v4-sol-reason" class="text-[9px] text-gray-600 truncate">—</div>
+          </div>
         </div>
-        <!-- Alerts -->
-        <div id="v4-alerts" class="hidden mt-1.5 text-[9px] text-red-400 flex flex-wrap gap-1"></div>
+
+        <!-- Meta-Layer weights + Alerts -->
+        <div class="px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-1 flex-wrap" id="v4-meta-weights">
+            <span class="text-[10px] text-gray-600 mr-1">Pesos adaptativos:</span>
+            <span class="text-[10px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/20">Vol Exp <span id="meta-vol-exp">—</span></span>
+            <span class="text-[10px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/20">Mkt Struct <span id="meta-mkt-str">—</span></span>
+            <span class="text-[10px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/20">Orderflow <span id="meta-orderflow">—</span></span>
+            <span class="text-[10px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/20">Rel Str <span id="meta-rel-str">—</span></span>
+          </div>
+          <div id="v4-alerts" class="hidden flex flex-wrap gap-1"></div>
+        </div>
+
       </div>
       <!-- Bear Signals — visível apenas quando há sinais ativos -->
       <div id="bear-signals-row" class="hidden mb-3 flex flex-wrap gap-1.5"></div>
