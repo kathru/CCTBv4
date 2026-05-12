@@ -762,7 +762,6 @@ async def reset_portfolio(token: str = "", brl: float = 0.0):
     _save_history(state["history"])
 
     # ── Reinicia cooldowns, sinais e contadores ───────────────────
-    sl_cooldowns.clear()
     last_signals.clear()
     _daily_trade_count.clear()
     last_buy_time.clear()
