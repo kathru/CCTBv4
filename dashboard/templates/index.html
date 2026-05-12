@@ -632,6 +632,36 @@
         </div>
 
       </div>
+
+      <!-- ── Estatísticas por Regime ── -->
+      <div class="mt-4 bg-gray-800/40 rounded-xl p-4 border border-gray-700/40">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Estatísticas por Regime</p>
+          <span class="text-[9px] text-gray-600">computado de trades reais · cada regime tem edge diferente</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-[10px]">
+            <thead>
+              <tr class="border-b border-gray-700/60">
+                <th class="text-left text-gray-500 font-semibold pb-2 pr-4 whitespace-nowrap">Regime</th>
+                <th class="text-right text-gray-500 font-semibold pb-2 px-3 whitespace-nowrap">Trades</th>
+                <th class="text-right text-gray-500 font-semibold pb-2 px-3 whitespace-nowrap">Win Rate</th>
+                <th class="text-right text-gray-500 font-semibold pb-2 px-3 whitespace-nowrap">EV médio</th>
+                <th class="text-right text-gray-500 font-semibold pb-2 px-3 whitespace-nowrap">P. Factor</th>
+                <th class="text-right text-gray-500 font-semibold pb-2 px-3 whitespace-nowrap">Avg Hold</th>
+                <th class="text-right text-gray-500 font-semibold pb-2 px-3 whitespace-nowrap">Max DD</th>
+                <th class="text-left text-gray-500 font-semibold pb-2 pl-3">Edge</th>
+              </tr>
+            </thead>
+            <tbody id="regime-stats-body">
+              <tr>
+                <td colspan="8" class="text-center text-gray-600 py-4">Aguardando trades com regime...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="text-[9px] text-gray-700 mt-2">n &lt; 5 trades por regime: dados insuficientes para conclusão estatística</p>
+      </div>
     </div>
 
     <!-- ── KPIs em Tempo Real ── -->
@@ -1929,6 +1959,9 @@
       }
     }
 
+    // ── Estatísticas por Regime ──────────────────────────────────────────
+    _updateRegimeStats(trades);
+
     // ── Bloqueios recentes ───────────────────────────────────────────────
     const blockEl = document.getElementById('blocked-log-list');
     if (blockEl) {
@@ -1946,6 +1979,168 @@
         }).join('');
       }
     }
+  }
+
+  function _updateRegimeStats(trades) {
+    const tbody = document.getElementById('regime-stats-body');
+    if (!tbody) return;
+
+    // Associa cada SELL ao BUY correspondente do mesmo par para calcular hold time e drawdown
+    // Usa os campos regime, score, pnl_net, ts já presentes no trade record
+    const sellTrades = trades.filter(t => t.side === 'SELL' && t.regime);
+    const buyTrades  = trades.filter(t => t.side === 'BUY'  && t.regime);
+
+    if (sellTrades.length === 0 && buyTrades.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-gray-600 py-4">Aguardando trades com regime...</td></tr>';
+      return;
+    }
+
+    // Agrupa por regime — usa SELLs para P&L, BUYs para contagem de entradas
+    const REGIME_ORDER = [
+      'TREND_EXPANSION', 'TREND_EXHAUSTION', 'VOLATILITY_COMPRESSION',
+      'MEAN_REVERTING_CHOP', 'HIGH_CORRELATION_RISK', 'PANIC_LIQUIDATION', 'LIQUIDITY_VACUUM',
+    ];
+    const REGIME_SHORT = {
+      'TREND_EXPANSION':        'TREND ↑',
+      'TREND_EXHAUSTION':       'EXHAUST',
+      'VOLATILITY_COMPRESSION': 'COMPRESS',
+      'MEAN_REVERTING_CHOP':    'CHOP',
+      'HIGH_CORRELATION_RISK':  'CORR ↑',
+      'PANIC_LIQUIDATION':      'PANIC',
+      'LIQUIDITY_VACUUM':       'VACUUM',
+    };
+    const REGIME_COLOR = {
+      'TREND_EXPANSION':        '#4ade80',
+      'TREND_EXHAUSTION':       '#facc15',
+      'VOLATILITY_COMPRESSION': '#60a5fa',
+      'MEAN_REVERTING_CHOP':    '#9ca3af',
+      'HIGH_CORRELATION_RISK':  '#fb923c',
+      'PANIC_LIQUIDATION':      '#f87171',
+      'LIQUIDITY_VACUUM':       '#f87171',
+    };
+
+    // Mapa: regime → lista de SELLs (com pnl_net)
+    const byRegime = {};
+    [...sellTrades, ...buyTrades].forEach(t => {
+      const r = (t.regime || '').toUpperCase().trim();
+      if (!r) return;
+      if (!byRegime[r]) byRegime[r] = { sells: [], buys: [] };
+      if (t.side === 'SELL') byRegime[r].sells.push(t);
+      else                   byRegime[r].buys.push(t);
+    });
+
+    // Reconstroí hold time: match BUY→SELL por par dentro do regime
+    const holdByRegime = {};
+    [...trades].reverse().forEach(t => { t._seen = false; });
+    const buyQueue = {}; // pair → [{ts, regime}]
+    [...trades].slice().reverse().forEach(t => {
+      if (t.side === 'BUY' && t.regime) {
+        const key = t.pair;
+        if (!buyQueue[key]) buyQueue[key] = [];
+        buyQueue[key].push({ ts: t.ts, regime: (t.regime||'').toUpperCase() });
+      }
+      if (t.side === 'SELL' && t.regime && t.ts) {
+        const key = t.pair;
+        const q = buyQueue[key];
+        if (q && q.length > 0) {
+          const buy = q.shift();
+          const holdH = (t.ts - buy.ts) / 3600;
+          const r = (t.regime||'').toUpperCase();
+          if (!holdByRegime[r]) holdByRegime[r] = [];
+          holdByRegime[r].push(holdH);
+        }
+      }
+    });
+
+    // Ordena por regimes conhecidos primeiro, depois outros
+    const allRegimes = [...new Set([
+      ...REGIME_ORDER.filter(r => byRegime[r]),
+      ...Object.keys(byRegime).filter(r => !REGIME_ORDER.includes(r)),
+    ])];
+
+    if (allRegimes.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center text-gray-600 py-4">Aguardando trades com regime...</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = allRegimes.map(regime => {
+      const data  = byRegime[regime] || { sells: [], buys: [] };
+      const sells = data.sells;
+      const nSells = sells.length;
+      const nBuys  = data.buys.length;
+      const nTotal = Math.max(nSells, nBuys);
+
+      const insufficient = nSells < 3;
+      const color = REGIME_COLOR[regime] || '#9ca3af';
+      const label = REGIME_SHORT[regime] || regime.replace(/_/g,' ');
+
+      if (nTotal === 0) return '';
+
+      // Win rate (só SELLs têm pnl_net)
+      const wins    = sells.filter(t => (t.pnl_net || 0) > 0);
+      const losses  = sells.filter(t => (t.pnl_net || 0) <= 0);
+      const wr      = nSells > 0 ? wins.length / nSells : null;
+      const wrStr   = wr != null ? (wr * 100).toFixed(0) + '%' : '—';
+      const wrColor = wr == null ? '#6b7280' : wr >= 0.55 ? '#4ade80' : wr >= 0.45 ? '#fb923c' : '#f87171';
+
+      // EV médio (pnl_net / usd como %)
+      const evVals = sells.map(t => t.pnl_net != null && t.usd > 0 ? t.pnl_net / t.usd : null).filter(v => v != null);
+      const evAvg  = evVals.length > 0 ? evVals.reduce((a,b) => a+b, 0) / evVals.length : null;
+      const evStr  = evAvg != null ? (evAvg >= 0 ? '+' : '') + (evAvg * 100).toFixed(2) + '%' : '—';
+      const evColor= evAvg == null ? '#6b7280' : evAvg >= 0 ? '#4ade80' : '#f87171';
+
+      // Profit factor
+      const grossWin  = wins.reduce((s, t) => s + (t.pnl_net || 0), 0);
+      const grossLoss = Math.abs(losses.reduce((s, t) => s + (t.pnl_net || 0), 0)) || 0.0001;
+      const pf        = nSells >= 2 ? (grossWin / grossLoss) : null;
+      const pfStr     = pf != null ? pf.toFixed(2) : '—';
+      const pfColor   = pf == null ? '#6b7280' : pf >= 1.5 ? '#4ade80' : pf >= 1.0 ? '#fb923c' : '#f87171';
+
+      // Avg hold
+      const holds    = holdByRegime[regime] || [];
+      const avgHold  = holds.length > 0 ? holds.reduce((a,b) => a+b, 0) / holds.length : null;
+      const holdStr  = avgHold != null ? avgHold.toFixed(1) + 'h' : '—';
+
+      // Max drawdown: sequência de perdas acumuladas dentro deste regime
+      let cumPnl = 0, peak = 0, maxDD = 0;
+      sells.forEach(t => {
+        cumPnl += (t.pnl_net || 0);
+        peak = Math.max(peak, cumPnl);
+        maxDD = Math.min(maxDD, cumPnl - peak);
+      });
+      const ddStr   = nSells >= 2 ? (maxDD <= 0 ? maxDD.toFixed(3) : '0.000') + ' US$' : '—';
+      const ddColor = maxDD < -0.5 ? '#f87171' : maxDD < -0.1 ? '#fb923c' : '#9ca3af';
+
+      // Edge badge
+      let edge = '—', edgeColor = '#6b7280', edgeBg = 'transparent';
+      if (!insufficient && pf != null && wr != null) {
+        if (pf >= 1.5 && wr >= 0.55)      { edge = '✓ EDGE';   edgeColor = '#4ade80'; edgeBg = 'rgba(74,222,128,0.1)'; }
+        else if (pf >= 1.2 && wr >= 0.50) { edge = '~ FRACO';  edgeColor = '#fb923c'; edgeBg = 'rgba(251,146,60,0.1)'; }
+        else if (pf < 1.0 || wr < 0.45)   { edge = '✗ SEM';    edgeColor = '#f87171'; edgeBg = 'rgba(248,113,113,0.1)'; }
+        else                               { edge = '? NEUTRO'; edgeColor = '#9ca3af'; }
+      }
+
+      const dimClass = insufficient ? 'opacity-50' : '';
+      const nBadge   = insufficient
+        ? `<span class="text-[8px] text-orange-400 ml-1">(n=${nSells})</span>`
+        : `<span class="text-[8px] text-gray-600 ml-1">n=${nSells}</span>`;
+
+      return `<tr class="border-b border-gray-800/40 hover:bg-gray-800/20 ${dimClass}">
+        <td class="py-2 pr-4 whitespace-nowrap">
+          <span class="font-bold text-[10px]" style="color:${color}">${label}</span>
+          ${nBadge}
+        </td>
+        <td class="text-right px-3 font-mono text-gray-300">${nTotal}</td>
+        <td class="text-right px-3 font-mono font-bold" style="color:${wrColor}">${wrStr}</td>
+        <td class="text-right px-3 font-mono" style="color:${evColor}">${evStr}</td>
+        <td class="text-right px-3 font-mono font-bold" style="color:${pfColor}">${pfStr}</td>
+        <td class="text-right px-3 font-mono text-gray-400">${holdStr}</td>
+        <td class="text-right px-3 font-mono" style="color:${ddColor}">${ddStr}</td>
+        <td class="pl-3">
+          <span class="text-[9px] font-bold px-1.5 py-0.5 rounded" style="color:${edgeColor};background:${edgeBg}">${edge}</span>
+        </td>
+      </tr>`;
+    }).filter(Boolean).join('');
   }
 
   // ─── Portfolio Chart ─────────────────────────────────────────────────

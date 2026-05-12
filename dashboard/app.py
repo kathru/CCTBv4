@@ -866,7 +866,7 @@ def get_rsi_value(candles, period=14):
 
 
 def _record_trade(side, pair, qty, price, usd, strategy,
-                  score=None, reason=None, exit_type=None, entry_price=None):
+                  score=None, reason=None, exit_type=None, entry_price=None, regime=None):
     fee    = FEE.taker * usd
     pnl_net = None
     if side == "SELL" and entry_price and entry_price > 0:
@@ -890,6 +890,7 @@ def _record_trade(side, pair, qty, price, usd, strategy,
         "reason":     reason or "",
         "exit_type":  exit_type or "",
         "entry_price": entry_price,
+        "regime":     regime or "",
     })
     state["trades"] = state["trades"][:100]
 
@@ -1214,7 +1215,8 @@ async def trading_loop():
                             _daily_trade_count[_today] = _daily_trade_count.get(_today, 0) + 1
                             _record_trade("BUY", pair, _v4_qty, price, _v4_size_usd, "V4:signal",
                                           score=_v4_score,
-                                          reason=_v4_decision.get("reason", ""))
+                                          reason=_v4_decision.get("reason", ""),
+                                          regime=_v4_regime)
                             logger.info(f"[V4][{pair}] ✅ BUY ${_v4_size_usd:.2f} @ ${price:,.2f} | sl={_v4_sl:.2f}")
 
                 # ── V4 SELL execution ─────────────────────────────────────────
@@ -1236,7 +1238,8 @@ async def trading_loop():
                                       score=_v4_score,
                                       reason=_v4_decision.get("reason", ""),
                                       exit_type=_exit_type,
-                                      entry_price=_v4_entry)
+                                      entry_price=_v4_entry,
+                                      regime=_v4_regime)
                         logger.info(f"[V4][{pair}] ✅ SELL ${_v4_sell_usd:.2f} @ ${price:,.2f} "
                                     f"| pnl={_v4_pnl:.2f} | {_exit_label} | {_v4_decision.get('reason','')}")
 
