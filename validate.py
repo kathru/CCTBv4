@@ -47,8 +47,14 @@ TIMEFRAME  = "1H"
 DATA_DIR   = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "historical")
 
 INITIAL_CAPITAL = 1000.0   # USD por walk-forward window
-FEE_RATE        = 0.001    # 0.10% maker (conservador)
-SLIPPAGE        = 0.0005   # 0.05% slippage estimado
+# Custos via FeeModel canônico (ver strategies/fee_model.py)
+try:
+    from strategies.fee_model import FEE as _FEE
+    FEE_RATE = _FEE.maker              # 0.001 — entrada limit (maker)
+    SLIPPAGE = _FEE.slippage_base      # 0.0002 — slippage base conservador
+except ImportError:
+    FEE_RATE = 0.001
+    SLIPPAGE = 0.0002
 
 # Walk-forward params
 TRAIN_MONTHS = 6

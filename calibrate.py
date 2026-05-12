@@ -40,9 +40,10 @@ DATA_DIR  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "hi
 OUT_PATH  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "calibration_result.json")
 COEF_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "calibration_coef.json")
 
-FEE_RATE  = 0.001    # 0.10% maker
-SLIPPAGE  = 0.0005   # 0.05%
-TOTAL_COST = (FEE_RATE + SLIPPAGE) * 2   # entrada + saída
+from strategies.fee_model import FEE as _FEE
+FEE_RATE   = _FEE.maker              # 0.001 — entrada limit
+SLIPPAGE   = _FEE.slippage_base      # 0.0002 — slippage conservador
+TOTAL_COST = _FEE.backtest_round_trip()   # round-trip: maker+taker+2×slippage ≈ 0.0054
 
 SCORE_BUCKETS = [
     (0.48, 0.52),

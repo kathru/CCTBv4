@@ -43,6 +43,7 @@ from strategies.risk_prior       import (
 from strategies.meta_layer       import MetaLayer
 from strategies.portfolio_engine import evaluate_new_entry, calc_portfolio_beta
 from exchange.execution_engine   import plan_entry, update_trailing_stop
+from strategies.fee_model        import FEE
 
 
 class V4Orchestrator:
@@ -127,7 +128,7 @@ class V4Orchestrator:
                 market_context=market_ctx,
                 regime=regime,
                 closes_map=closes_map,
-                fee_rate=0.002,
+                fee_rate=FEE.signal_ev_cost(rr=2.0),   # ~0.00173 — correto para EV
                 expected_rr=2.0,
             )
         except Exception:

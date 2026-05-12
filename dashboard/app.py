@@ -18,6 +18,7 @@ from exchange.okx     import OKXClient
 from paper_trading.engine           import PaperTradingEngine, TAKER_FEE
 from paper_trading.simulated_engine import SimulatedExecutionEngine
 from exchange.okx_trading           import OKXTradingClient
+from strategies.fee_model           import FEE
 from strategies.news_guard             import is_news_blackout, next_event
 from strategies.market_breadth         import get_market_breadth, MarketBreadthSnapshot
 from strategies.market_regime          import calc_adx, calc_atr
@@ -116,21 +117,14 @@ def _detect_market_regime(candles_1h: list, candles_6h: list,
 
 
 def _get_fee_rates() -> tuple:
-    """Determina maker/taker fee pelo volume dos últimos 30 dias."""
-    cutoff  = time.time() - 30 * 86400
-    vol_30d = sum(t.get("usd", 0) for t in engine.trades if (t.get("ts") or 0) >= cutoff)
-    maker, taker = 0.0010, 0.0040
-    for min_vol, m, t_ in reversed(COINBASE_FEE_TIERS):
-        if vol_30d >= min_vol:
-            maker, taker = m, t_
-            break
-    return maker, taker
+    """Retorna (maker, taker) do FeeModel canônico."""
+    return FEE.maker, FEE.taker
 
 def _current_taker_fee() -> float:
-    _, taker = _get_fee_rates(); return taker
+    return FEE.taker
 
 def _current_maker_fee() -> float:
-    maker, _ = _get_fee_rates(); return maker
+    return FEE.maker
 
 
 def _calc_confidence_score(signals: dict, regime: str, adx: float) -> float:

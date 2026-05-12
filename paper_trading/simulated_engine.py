@@ -35,6 +35,7 @@ from typing import Optional
 from datetime import datetime
 
 from paper_trading.engine import PaperTradingEngine
+from strategies.fee_model import FEE, MAKER_FEE, TAKER_FEE   # fonte única de verdade
 
 # Import opcional — só usado se OKXTradingClient estiver disponível
 try:
@@ -42,11 +43,6 @@ try:
     _HAS_TRADING_CLIENT = True
 except ImportError:
     _HAS_TRADING_CLIENT = False
-
-
-# ── Taxas OKX (conta regular, sem tier de volume) ────────────────────────────
-MAKER_FEE = 0.001   # 0.10%
-TAKER_FEE = 0.004   # 0.40%
 
 # ── Parâmetros por símbolo (OKX lot size / min notional) ─────────────────────
 SYMBOL_PARAMS = {
@@ -95,11 +91,8 @@ def _vol_fill_adj(atr_pct: float) -> float:
 #
 def _calc_slippage(order_type: str, atr_pct: float, spread_pct: float) -> float:
     if order_type == "limit":
-        return 0.0  # sem slippage em limit — custo é o fill_prob
-    # Market: slippage = f(spread, vol)
-    base_slip = spread_pct * 0.5
-    vol_slip  = atr_pct * 0.08   # 8% do ATR como slippage adicional em market
-    return min(base_slip + vol_slip, 0.005)  # cap em 0.5%
+        return FEE.slippage_limit   # residual constante
+    return FEE.slippage_market(atr_pct, spread_pct)
 
 
 # ── Partial fill ──────────────────────────────────────────────────────────────

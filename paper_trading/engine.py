@@ -9,7 +9,7 @@ init(autoreset=True)
 STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "engine_state.json")
 
 
-TAKER_FEE = 0.004   # 0.40% — OKX Regular taker fee
+from strategies.fee_model import FEE, TAKER_FEE, MAKER_FEE  # noqa: F401 (TAKER_FEE re-exportado)
 
 
 class PaperTradingEngine:

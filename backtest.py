@@ -26,8 +26,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 PAIRS          = ["BTC-USD", "ETH-USD", "SOL-USD"]
 INITIAL_USD    = 1020.0       # R$ 5.000 / ~4.90
 TRADE_PCT_BASE = 0.08         # 8% base por trade
-TAKER_FEE      = 0.0004       # 0.04% (não 0.40% — OKX spot taker)
-MAKER_FEE      = 0.0001       # 0.01% maker
+from strategies.fee_model import FEE as _FEE
+TAKER_FEE      = _FEE.taker    # 0.004 = 0.40% OKX Regular (era 0.0004 — bug 10×)
+MAKER_FEE      = _FEE.maker    # 0.001 = 0.10% OKX Regular
 DAYS           = 30
 MIN_SCORE      = 0.55
 COOLDOWN_BARS  = 4            # 4 ciclos (4h) entre BUYs no mesmo par
@@ -239,7 +240,7 @@ def compute_signal(candles: list, candles_other: dict, regime: str) -> dict:
     elif regime == "HIGH_CORRELATION_RISK":
         score = min(score, 0.58)
 
-    ev = score * 2.0 - (1-score) * 1.0 - (TAKER_FEE * 3)
+    ev = score * 2.0 - (1-score) * 1.0 - _FEE.signal_ev_cost(rr=2.0) * 3
     return {"score": round(score,4), "ev": round(ev,4), "direction": dominant,
             "vol_exp": round(vol_exp,3), "atr_exp": round(atr_exp,3)}
 
