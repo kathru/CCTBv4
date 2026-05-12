@@ -189,23 +189,15 @@
           <span id="v4-risk-action" class="text-xs font-bold px-3 py-1 rounded-full bg-gray-700 text-gray-300">normal</span>
         </div>
 
-        <!-- Sizing row + Legenda Score -->
-        <div class="flex items-center justify-between flex-wrap gap-x-4 gap-y-1 px-4 py-2 border-b border-gray-800 bg-gray-800/20">
-          <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <span class="text-[10px] text-gray-500">Sizing <span class="font-semibold text-indigo-400">Edge×Conf / Vol×Corr</span></span>
-            <span class="text-gray-700 opacity-40">|</span>
-            <span class="text-[10px] text-gray-500">Kelly <span class="font-semibold text-yellow-400">25% parcial</span></span>
-            <span class="text-gray-700 opacity-40">|</span>
-            <span class="text-[10px] text-gray-500">SL <span class="font-semibold text-purple-400">ATR×regime</span></span>
-            <span class="text-gray-700 opacity-40">|</span>
-            <span class="text-[10px] text-gray-500">TP <span class="font-semibold text-green-400">escalonado 1.5/2/3×</span></span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="score-blocked text-[9px] px-2 py-0.5 rounded font-semibold">&lt;55% HOLD</span>
-            <span class="score-reduced text-[9px] px-2 py-0.5 rounded font-semibold">55–65% REDUZIDO</span>
-            <span class="score-normal  text-[9px] px-2 py-0.5 rounded font-semibold">65–75% NORMAL</span>
-            <span class="score-aggr   text-[9px] px-2 py-0.5 rounded font-semibold">75%+ AGRESSIVO</span>
-          </div>
+        <!-- Sizing row -->
+        <div class="flex items-center flex-wrap gap-x-4 gap-y-1 px-4 py-2 border-b border-gray-800 bg-gray-800/20">
+          <span class="text-[10px] text-gray-500">Sizing <span class="font-semibold text-indigo-400">Edge×Conf / Vol×Corr</span></span>
+          <span class="text-gray-700 opacity-40">|</span>
+          <span class="text-[10px] text-gray-500">Kelly <span class="font-semibold text-yellow-400">25% parcial</span></span>
+          <span class="text-gray-700 opacity-40">|</span>
+          <span class="text-[10px] text-gray-500">SL <span class="font-semibold text-purple-400">ATR×regime</span></span>
+          <span class="text-gray-700 opacity-40">|</span>
+          <span class="text-[10px] text-gray-500">TP <span class="font-semibold text-green-400">escalonado 1.5/2/3×</span></span>
         </div>
 
         <!-- Risk Engine — 4 métricas verticais com barra -->
@@ -293,6 +285,13 @@
           <div id="v4-alerts" class="hidden flex flex-wrap gap-1"></div>
         </div>
 
+      </div>
+      <!-- Escala de score -->
+      <div class="flex items-center gap-2 mt-3">
+        <span class="score-blocked text-[9px] px-2 py-0.5 rounded font-semibold flex-1 text-center">&lt;55% HOLD</span>
+        <span class="score-reduced text-[9px] px-2 py-0.5 rounded font-semibold flex-1 text-center">55–65% REDUZIDO</span>
+        <span class="score-normal  text-[9px] px-2 py-0.5 rounded font-semibold flex-1 text-center">65–75% NORMAL</span>
+        <span class="score-aggr   text-[9px] px-2 py-0.5 rounded font-semibold flex-1 text-center">75%+ AGRESSIVO</span>
       </div>
       <!-- Bear Signals — visível apenas quando há sinais ativos -->
       <div id="bear-signals-row" class="hidden mb-3 flex flex-wrap gap-1.5"></div>
