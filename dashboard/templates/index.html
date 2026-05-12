@@ -120,7 +120,11 @@
       <div class="card px-4 py-3">
         <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">P&L</p>
         <p id="pnl-value" class="text-lg font-bold text-gray-400 leading-tight">R$ 0,00</p>
-        <p id="pnl-pct" class="text-[10px] text-gray-500 mt-0.5">+0.00%</p>
+        <p id="pnl-pct" class="text-[10px] mt-0.5 text-gray-500">+0.00%</p>
+        <div class="flex gap-2 mt-1">
+          <span class="text-[9px] text-green-500">▲ <span id="pnl-wins">R$ 0</span></span>
+          <span class="text-[9px] text-red-500">▼ <span id="pnl-losses">R$ 0</span></span>
+        </div>
       </div>
       <div class="card px-4 py-3">
         <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Saldo Disponível</p>
@@ -939,6 +943,23 @@
     pnlEl.className = 'text-lg font-bold leading-tight ' + (pnlBRL >= 0 ? 'text-green-400' : 'text-red-400');
     document.getElementById('pnl-pct').textContent = (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%';
     document.getElementById('pnl-pct').className = 'text-[10px] mt-0.5 ' + (pnlPct >= 0 ? 'text-green-500' : 'text-red-500');
+
+    // Ganhos e perdas totais dos trades realizados
+    { const trades = s.trades || [];
+      let grossWins = 0, grossLosses = 0;
+      trades.forEach(t => {
+        if (t.side !== 'SELL') return;
+        const pnl = t.pnl_net != null ? t.pnl_net : (t.usd != null && t.entry_price && t.qty
+          ? (t.price - t.entry_price) * t.qty - (t.fee || 0) : null);
+        if (pnl == null) return;
+        if (pnl > 0) grossWins   += pnl;
+        else         grossLosses += Math.abs(pnl);
+      });
+      const wEl = document.getElementById('pnl-wins');
+      const lEl = document.getElementById('pnl-losses');
+      if (wEl) wEl.textContent = 'R$ ' + fmtBRL(grossWins   * usdBrl);
+      if (lEl) lEl.textContent = 'R$ ' + fmtBRL(grossLosses * usdBrl);
+    }
 
     const subtitleEl = document.getElementById('strategy-panel-subtitle');
     if (subtitleEl) {
