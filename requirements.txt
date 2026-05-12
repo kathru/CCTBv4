@@ -8,5 +8,6 @@ PyJWT[crypto]
 cryptography
 flask
 fastapi
-uvicorn
+uvicorn[standard]
+websockets
 jinja2
