@@ -1068,6 +1068,28 @@ async def trading_loop():
                 }
                 logger.info(f"[V4][{pair}] {_v4_decision.get('decision')} | score={_v4_decision.get('score', 0):.3f} | {_v4_decision.get('reason', '')}")
 
+                # ── Feed: registra sinal V4 de cada ciclo ────────────────────
+                _v4_dec   = _v4_decision.get("decision", "HOLD")
+                _v4_score = _v4_decision.get("score", 0.5)
+                _v4_regime = state["v4"][pair].get("regime", "—")
+                _v4_ev    = _v4_decision.get("expected_value", 0.0) or 0.0
+                _v4_reason = _v4_decision.get("reason", "")
+                _sig_key  = f"V4:{pair}:signal"
+                _prev_dec = last_signals.get(_sig_key)
+                if _v4_dec != _prev_dec:   # só insere quando decisão muda
+                    last_signals[_sig_key] = _v4_dec
+                    state["feed"].insert(0, {
+                        "time":     now_str,
+                        "cycle":    state["cycle"],
+                        "pair":     pair,
+                        "strategy": "V4:signal",
+                        "signal":   _v4_dec,
+                        "price":    price,
+                        "executed": False,
+                        "note":     f"score={_v4_score:.0%} ev={_v4_ev:+.4f} | {_v4_regime} | {_v4_reason[:40]}",
+                    })
+                    state["feed"] = state["feed"][:100]
+
                 # ── V4 BUY execution ──────────────────────────────────────────
                 _today = datetime.now().strftime("%Y-%m-%d")
                 _v4_key = f"V4:{pair}"
