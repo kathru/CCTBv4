@@ -423,39 +423,105 @@
 
       <!-- Market Breadth — vertical -->
       <div class="card p-5 flex flex-col">
+
+        <!-- Header -->
         <div class="flex items-center justify-between mb-4">
           <h3 class="font-semibold text-white">Market Breadth</h3>
-          <span id="breadth-label" class="text-xs font-bold px-2 py-0.5 rounded bg-gray-700 text-gray-300">N/A</span>
+          <span id="breadth-label" class="text-xs font-bold px-2.5 py-1 rounded bg-gray-700 text-gray-300">N/A</span>
         </div>
-        <!-- 4 métricas verticais -->
-        <div class="flex flex-col gap-2.5 flex-1">
-          <div class="bg-gray-800/70 rounded-lg px-4 py-3 flex items-center justify-between">
-            <span class="text-[10px] text-gray-500 uppercase tracking-wider">Pairs &gt; EMA50</span>
-            <span id="breadth-alts-ema50" class="text-base font-bold text-white">—</span>
+
+        <!-- Score gauge centralizado -->
+        <div class="flex flex-col items-center mb-4">
+          <div class="relative w-full h-3 bg-gray-800 rounded-full overflow-hidden mb-2">
+            <div id="breadth-score-bar" class="absolute inset-y-0 left-0 rounded-full transition-all duration-700 bg-gray-600" style="width:50%"></div>
+            <!-- threshold marker 40% -->
+            <div class="absolute inset-y-0 bg-red-500/60" style="left:40%;width:1px"></div>
           </div>
-          <div class="bg-gray-800/70 rounded-lg px-4 py-3 flex items-center justify-between">
-            <span class="text-[10px] text-gray-500 uppercase tracking-wider">BTC Dom.</span>
-            <span id="breadth-btc-dom" class="text-base font-bold text-white">—</span>
+          <div class="flex items-baseline gap-1.5">
+            <span id="breadth-score" class="text-3xl font-bold font-mono text-white">—</span>
+            <span class="text-xs text-gray-500">score</span>
+            <span id="breadth-block-badge" class="hidden ml-2 text-[10px] px-2 py-0.5 rounded font-bold bg-red-500/20 text-red-400 border border-red-500/30">🚫 BLOQUEADO</span>
           </div>
-          <div class="bg-gray-800/70 rounded-lg px-4 py-3 flex items-center justify-between">
-            <span class="text-[10px] text-gray-500 uppercase tracking-wider">Funding BTC</span>
-            <span id="breadth-funding" class="text-base font-bold text-white">—</span>
-          </div>
-          <div class="bg-gray-800/70 rounded-lg px-4 py-3 flex items-center justify-between">
-            <span class="text-[10px] text-gray-500 uppercase tracking-wider">OI Expansion</span>
-            <span id="breadth-oi" class="text-base font-bold text-white">—</span>
-          </div>
+          <p class="text-[9px] text-gray-600 mt-0.5">linha vermelha = limite de bloqueio (40%)</p>
         </div>
-        <!-- Score + status -->
-        <div class="mt-4 pt-3 border-t border-gray-800 flex items-center justify-between text-[10px]">
-          <span class="text-gray-500">Score: <span id="breadth-score" class="font-bold text-white ml-1">—</span></span>
-          <div class="flex items-center gap-2">
-            <span id="breadth-block-badge" class="hidden px-2 py-0.5 rounded font-bold bg-red-500/20 text-red-400 border border-red-500/30">🚫 BLOQUEADO</span>
-            <span class="text-gray-700">
-              <span class="text-green-500">≥40%</span> libera ·
-              <span class="text-red-500">&lt;40%</span> bloqueia
-            </span>
+
+        <!-- 4 métricas com barra de contribuição -->
+        <div class="flex flex-col gap-2 flex-1">
+
+          <!-- Pairs > EMA50 — peso 35% -->
+          <div class="bg-gray-800/60 rounded-lg px-3 py-2.5">
+            <div class="flex items-center justify-between mb-1.5">
+              <div>
+                <span class="text-[10px] text-gray-400 font-semibold">Pairs &gt; EMA50</span>
+                <span class="text-[9px] text-gray-600 ml-1.5">35% do score</span>
+              </div>
+              <div class="text-right">
+                <span id="breadth-alts-ema50" class="text-sm font-bold text-white">—</span>
+                <span id="breadth-alts-context" class="text-[9px] text-gray-500 ml-1">—</span>
+              </div>
+            </div>
+            <div class="h-1 bg-gray-700 rounded-full overflow-hidden">
+              <div id="breadth-alts-bar" class="h-full rounded-full bg-gray-600 transition-all duration-500" style="width:50%"></div>
+            </div>
           </div>
+
+          <!-- BTC Dominance — peso 25% -->
+          <div class="bg-gray-800/60 rounded-lg px-3 py-2.5">
+            <div class="flex items-center justify-between mb-1.5">
+              <div>
+                <span class="text-[10px] text-gray-400 font-semibold">BTC Dominância</span>
+                <span class="text-[9px] text-gray-600 ml-1.5">25% do score</span>
+              </div>
+              <div class="text-right">
+                <span id="breadth-btc-dom" class="text-sm font-bold text-white">—</span>
+                <span id="breadth-dom-context" class="text-[9px] text-gray-500 ml-1">—</span>
+              </div>
+            </div>
+            <div class="h-1 bg-gray-700 rounded-full overflow-hidden">
+              <div id="breadth-dom-bar" class="h-full rounded-full bg-gray-600 transition-all duration-500" style="width:50%"></div>
+            </div>
+          </div>
+
+          <!-- Funding Rate — peso 25% -->
+          <div class="bg-gray-800/60 rounded-lg px-3 py-2.5">
+            <div class="flex items-center justify-between mb-1.5">
+              <div>
+                <span class="text-[10px] text-gray-400 font-semibold">Funding Rate BTC</span>
+                <span class="text-[9px] text-gray-600 ml-1.5">25% do score</span>
+              </div>
+              <div class="text-right">
+                <span id="breadth-funding" class="text-sm font-bold text-white">—</span>
+                <span id="breadth-fund-context" class="text-[9px] text-gray-500 ml-1">—</span>
+              </div>
+            </div>
+            <div class="h-1 bg-gray-700 rounded-full overflow-hidden">
+              <div id="breadth-fund-bar" class="h-full rounded-full bg-gray-600 transition-all duration-500" style="width:50%"></div>
+            </div>
+          </div>
+
+          <!-- OI Expansion — peso 15% -->
+          <div class="bg-gray-800/60 rounded-lg px-3 py-2.5">
+            <div class="flex items-center justify-between mb-1.5">
+              <div>
+                <span class="text-[10px] text-gray-400 font-semibold">OI Expansion</span>
+                <span class="text-[9px] text-gray-600 ml-1.5">15% do score</span>
+              </div>
+              <div class="text-right">
+                <span id="breadth-oi" class="text-sm font-bold text-white">—</span>
+                <span id="breadth-oi-context" class="text-[9px] text-gray-500 ml-1">—</span>
+              </div>
+            </div>
+            <div class="h-1 bg-gray-700 rounded-full overflow-hidden">
+              <div id="breadth-oi-bar" class="h-full rounded-full bg-gray-600 transition-all duration-500" style="width:50%"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Legenda -->
+        <div class="mt-3 pt-2.5 border-t border-gray-800/60 flex justify-between text-[9px] text-gray-600">
+          <span><span class="text-green-500">≥40%</span> compras liberadas</span>
+          <span><span class="text-red-500">&lt;40%</span> compras bloqueadas</span>
         </div>
       </div>
 
@@ -894,52 +960,108 @@
     // ── Market Breadth panel ──────────────────────────────────────────────
     const mb = s.market_breadth || {};
     if (mb) {
-      const mbLabelEl = document.getElementById('breadth-label');
       const mbLabel   = mb.label || 'N/A';
       const mbScore   = mb.score;
-      const mbBlocked = (mb.score != null && mb.score < 0.40);
+      const mbBlocked = mbScore != null && mbScore < 0.40;
+
+      // Label badge
+      const mbLabelEl = document.getElementById('breadth-label');
       if (mbLabelEl) {
         const lCls = mbLabel === 'STRONG'   ? 'bg-green-900 text-green-300'
                    : mbLabel === 'MODERATE' ? 'bg-blue-900 text-blue-300'
                    : mbLabel === 'WEAK'     ? 'bg-yellow-900 text-yellow-300'
                    : mbLabel === 'DANGER'   ? 'bg-red-900 text-red-300'
                    : 'bg-gray-700 text-gray-400';
-        mbLabelEl.className = `text-xs font-bold px-2 py-0.5 rounded ${lCls}`;
+        mbLabelEl.className   = `text-xs font-bold px-2.5 py-1 rounded ${lCls}`;
         mbLabelEl.textContent = mbLabel;
       }
-      // alts_above_ema50_pct agora chega como % real (0-100) do backend
+
+      // Score gauge — barra principal + número grande
+      const scoreEl  = document.getElementById('breadth-score');
+      const scoreBar = document.getElementById('breadth-score-bar');
+      if (scoreEl) {
+        const pct = mbScore != null ? Math.round(mbScore * 100) : null;
+        scoreEl.textContent = pct != null ? pct + '%' : '—';
+        scoreEl.style.color = pct == null ? '#9ca3af' : pct >= 40 ? '#4ade80' : '#f87171';
+      }
+      if (scoreBar && mbScore != null) {
+        const pct   = Math.round(mbScore * 100);
+        const color = pct >= 70 ? '#4ade80' : pct >= 40 ? '#60a5fa' : '#f87171';
+        scoreBar.style.width      = pct + '%';
+        scoreBar.style.background = color;
+      }
+
+      // Block badge
+      const blockBadge = document.getElementById('breadth-block-badge');
+      if (blockBadge) blockBadge.classList.toggle('hidden', !mbBlocked);
+
+      // helpers
+      const setBar = (id, pct, color) => {
+        const el = document.getElementById(id);
+        if (el) { el.style.width = pct + '%'; el.style.background = color; }
+      };
+      const setCtx = (id, txt) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = txt;
+      };
+
+      // 1. Pairs > EMA50 (35%)
       const altsPct = mb.alts_above_ema50_pct;
       const altsEl  = document.getElementById('breadth-alts-ema50');
       if (altsEl) {
         altsEl.textContent = altsPct != null ? Math.round(altsPct) + '%' : '—';
         altsEl.style.color = altsPct == null ? '#9ca3af' : altsPct >= 60 ? '#4ade80' : altsPct >= 40 ? '#fb923c' : '#f87171';
       }
-      // btc_dominance agora chega como % real (0-100) do backend, ex: 60.5
+      if (altsPct != null) {
+        const c = altsPct >= 60 ? '#4ade80' : altsPct >= 40 ? '#fb923c' : '#f87171';
+        setBar('breadth-alts-bar', Math.min(altsPct, 100), c);
+        setCtx('breadth-alts-context', altsPct >= 60 ? 'bullish' : altsPct >= 40 ? 'neutro' : 'fraco');
+      }
+
+      // 2. BTC Dominance (25%) — baixa dom = risco-on = bom
+      const dom   = mb.btc_dominance;
       const domEl = document.getElementById('breadth-btc-dom');
       if (domEl) {
-        const dom = mb.btc_dominance;
         domEl.textContent = dom != null ? dom.toFixed(1) + '%' : '—';
-        domEl.style.color = dom == null ? '#9ca3af' : dom >= 55 ? '#f87171' : dom >= 45 ? '#fb923c' : '#4ade80';
+        domEl.style.color = dom == null ? '#9ca3af' : dom >= 60 ? '#f87171' : dom >= 50 ? '#fb923c' : '#4ade80';
       }
+      if (dom != null) {
+        // barra invertida: dom alta = ruim; exibe quanto "espaço" para alts
+        const altSpace = Math.max(0, Math.min(100, 100 - dom));
+        const c = dom >= 60 ? '#f87171' : dom >= 50 ? '#fb923c' : '#4ade80';
+        setBar('breadth-dom-bar', altSpace, c);
+        setCtx('breadth-dom-context', dom >= 60 ? 'risco-off' : dom >= 50 ? 'neutro' : 'risco-on');
+      }
+
+      // 3. Funding Rate (25%)
+      const fr     = mb.funding_rate_btc;
       const fundEl = document.getElementById('breadth-funding');
       if (fundEl) {
-        const fr = mb.funding_rate_btc;
         fundEl.textContent = fr != null ? (fr * 100).toFixed(4) + '%' : '—';
-        fundEl.style.color = fr == null ? '#9ca3af' : fr > 0.05 ? '#f87171' : fr > 0.02 ? '#fb923c' : '#4ade80';
+        fundEl.style.color = fr == null ? '#9ca3af' : Math.abs(fr) < 0.0005 ? '#4ade80' : fr > 0.001 ? '#f87171' : '#fb923c';
       }
+      if (fr != null) {
+        // barra: funding neutro = cheio; funding excessivo = vazio
+        const absF = Math.abs(fr * 100);
+        const health = Math.max(0, Math.min(100, 100 - absF * 50));
+        const c = Math.abs(fr) < 0.0005 ? '#4ade80' : fr > 0.001 ? '#f87171' : '#fb923c';
+        setBar('breadth-fund-bar', health, c);
+        setCtx('breadth-fund-context', Math.abs(fr) < 0.0005 ? 'equilibrado' : fr > 0.001 ? 'longs excessivos' : fr < -0.001 ? 'shorts excessivos' : 'levemente positivo');
+      }
+
+      // 4. OI Expansion (15%)
+      const oi   = mb.oi_expansion_btc;
       const oiEl = document.getElementById('breadth-oi');
       if (oiEl) {
-        const oi = mb.oi_expansion_btc;
         oiEl.textContent = oi != null ? (oi >= 0 ? '+' : '') + oi.toFixed(2) + '%' : '—';
-        oiEl.style.color = oi == null ? '#9ca3af' : oi >= 5 ? '#4ade80' : oi >= 0 ? '#60a5fa' : '#f87171';
+        oiEl.style.color = oi == null ? '#9ca3af' : oi >= 2 ? '#4ade80' : oi >= 0 ? '#60a5fa' : '#f87171';
       }
-      const scoreEl = document.getElementById('breadth-score');
-      if (scoreEl) {
-        scoreEl.textContent = mbScore != null ? Math.round(mbScore * 100) + '%' : '—';
-        scoreEl.style.color = mbScore == null ? '#9ca3af' : mbScore >= 0.40 ? '#4ade80' : '#f87171';
+      if (oi != null) {
+        const oiHealth = Math.max(0, Math.min(100, 50 + oi * 5));
+        const c = oi >= 2 ? '#4ade80' : oi >= 0 ? '#60a5fa' : '#f87171';
+        setBar('breadth-oi-bar', oiHealth, c);
+        setCtx('breadth-oi-context', oi >= 2 ? 'expandindo' : oi >= 0 ? 'estável' : 'contraindo');
       }
-      const blockBadge = document.getElementById('breadth-block-badge');
-      if (blockBadge) blockBadge.classList.toggle('hidden', !mbBlocked);
     }
 
     // ── V4 Engine Panel ───────────────────────────────────────────────────
