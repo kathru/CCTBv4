@@ -252,7 +252,11 @@ client = OKXClient(
     secret_key = os.getenv("OKX_SECRET_KEY", os.getenv("SECRET_KEY", "")),
     passphrase = os.getenv("OKX_PASSPHRASE", ""),
 )
-engine = PaperTradingEngine(initial_balance_usd=10000.0)
+# Converte capital inicial de BRL para USD na taxa atual de mercado.
+# O motor opera sempre em USD; o dashboard converte para BRL apenas na exibição.
+_startup_usd_brl = _fetch_usd_brl()
+_initial_usd     = round(TOTAL_BRL_INITIAL / _startup_usd_brl, 2)
+engine = PaperTradingEngine(initial_balance_usd=_initial_usd)
 
 # ── V4 Orchestrator — pipeline probabilística completa ────────────
 v4 = V4Orchestrator(state_dir=os.path.join(os.path.dirname(os.path.dirname(__file__)), "data"))
@@ -576,7 +580,7 @@ state = {
     "portfolio": {
         "usd":                 round(engine.balance_usd, 2),
         "total_usd":           round(engine.portfolio_value(), 2),
-        "total_brl":           round(engine.portfolio_value() * 5.70, 2),
+        "total_brl":           round(engine.portfolio_value() * _startup_usd_brl, 2),
         "pnl_usd":             0.0,
         "pnl_brl":             0.0,
         "pnl_pct":             0.0,
@@ -593,7 +597,7 @@ state = {
     "last_update":   "",
     "cycle_start_ts": 0,
     "cycle_interval": CYCLE_INTERVAL,
-    "usd_brl":          5.70,
+    "usd_brl":          _startup_usd_brl,
     "trade_amount_brl": 0.0,
     "strategy_pnl":     {},
     "fear_greed":       {"value": 50, "label": "Neutral"},
@@ -728,17 +732,13 @@ async def reset_portfolio(token: str = "", brl: float = 0.0):
     if not all(prices.get(p) for p in PAIRS):
         return {"ok": False, "error": f"Preços indisponíveis: {prices}"}
 
-    # ── Portfolio em BRL é FIXO (R$ 4.000) ────────────────────────────
-    ALLOC_BRL = TOTAL_BRL_INITIAL / 4      # R$1.000 por cripto (1000 + 1000 + 1000 + 1000)
-    alloc_usd = ALLOC_BRL / usd_brl        # valor em USD na cotação atual
-    total_usd = TOTAL_BRL_INITIAL / usd_brl  # portfolio total em USD na cotação atual
+    # ── Converte capital inicial de BRL → USD na cotação atual ────────
+    # Motor opera sempre em USD; dashboard exibe BRL apenas na UI.
+    total_usd = TOTAL_BRL_INITIAL / usd_brl
 
-    # ── Reinicia engine DIRETAMENTE — sem compra, sem taxas ──────
-    # Portfólio: 100% em caixa — sem posições pré-carregadas
-    # Estratégias compram naturalmente via sinais → histórico 100% real
-    # P&L = portfolio_value() - initial_balance = total_usd - total_usd = 0,00 ✅
+    # ── Reinicia engine 100% em caixa — sem posições pré-carregadas ──
     engine.initial_balance = total_usd
-    engine.balance_usd     = total_usd   # tudo em caixa
+    engine.balance_usd     = total_usd
     engine.holdings        = {}
     engine.entry_prices    = {}
     engine.trades          = []
