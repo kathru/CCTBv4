@@ -29,6 +29,7 @@ from strategies.market_regime          import calc_adx, calc_atr
 from strategies.bb_reversion           import BBReversion
 from logger import setup_logger, log_cycle, log_trade, log_portfolio
 from notifier import notify_trade
+from dashboard.v4_orchestrator import V4Orchestrator
 
 load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), "code.env"))
 
@@ -377,6 +378,9 @@ client = OKXClient(
     passphrase = os.getenv("OKX_PASSPHRASE", ""),
 )
 engine = PaperTradingEngine(initial_balance_usd=10000.0)
+
+# ── V4 Orchestrator — pipeline probabilística completa ────────────
+v4 = V4Orchestrator(state_dir=os.path.join(os.path.dirname(os.path.dirname(__file__)), "data"))
 
 # ── 5 estratégias AGRESSIVAS 65/35 independentes ──────────────────────
 # 3 estratégias de tendência — foco em qualidade, menos fees
@@ -1142,6 +1146,27 @@ async def trading_loop():
             "score": None, "label": "N/A", "size_multiplier": 1.0,
         }
 
+        # ── V4 Risk Engine — atualiza estado global antes do loop de pares ──
+        try:
+            _v4_risk = await asyncio.wait_for(
+                loop.run_in_executor(None, v4.update_risk_state, engine),
+                timeout=15.0
+            )
+            state["v4_risk"] = {
+                "action":      _v4_risk.get("action", "normal"),
+                "sizing_mult": _v4_risk.get("sizing_mult", 1.0),
+                "alerts":      _v4_risk.get("alerts", []),
+                "var_pct":     _v4_risk.get("var_result", {}).get("var_pct", 0),
+                "ruin_prob":   _v4_risk.get("mc_result", {}).get("ruin_probability", 0),
+                "sharpe":      _v4_risk.get("mc_result", {}).get("sharpe_rolling", 0),
+                "winrate_7d":  _v4_risk.get("mc_result", {}).get("winrate_7d", 0.5),
+                "dd_alert":    _v4_risk.get("dd_result", {}).get("alert", False),
+                "meta":        _v4_risk.get("meta_summary", {}),
+            }
+        except Exception as _re:
+            logger.warning(f"[V4 Risk] Erro: {_re}")
+            state.setdefault("v4_risk", {"action": "normal", "sizing_mult": 1.0, "alerts": []})
+
         # ── Market Regime Engine — bull/chop/bear com 4 sinais adicionais ─────
         try:
             _btc_1h = _candle_cache.get(f"BTC-USD:{CANDLE_1H}", {}).get("data", [])
@@ -1209,6 +1234,86 @@ async def trading_loop():
                 except asyncio.TimeoutError:
                     logger.warning(f"[{pair}] Candles 1D timeout - usando cache")
                     candles_1d = _candle_cache.get(f"{pair}:{CANDLE_1D}", {}).get("data", [])
+
+                # ── V4 Pipeline: avaliação probabilística por par ─────────────
+                _closes_map = {
+                    p: [float(c["close"]) for c in _candle_cache.get(f"{p}:{CANDLE_1H}", {}).get("data", [])]
+                    for p in PAIRS
+                }
+                _v4_slot = strategy_slots.get(f"V4:{pair}", _empty_slot())
+                _v4_open_slots = {
+                    p: strategy_slots.get(f"V4:{p}", _empty_slot())
+                    for p in PAIRS
+                }
+                try:
+                    _v4_decision = await asyncio.wait_for(
+                        loop.run_in_executor(None, v4.evaluate,
+                            pair, candles_1h, candles_6h, _closes_map,
+                            engine, _v4_open_slots, _v4_slot if _v4_slot.get("qty", 0) > 0 else None),
+                        timeout=12.0
+                    )
+                except Exception as _v4_err:
+                    logger.warning(f"[V4][{pair}] Erro na pipeline: {_v4_err}")
+                    _v4_decision = {"decision": "HOLD", "score": 0.5, "reason": str(_v4_err)}
+
+                # Armazena decisão V4 no state para o dashboard
+                if "v4" not in state:
+                    state["v4"] = {}
+                state["v4"][pair] = {
+                    "decision":  _v4_decision.get("decision", "HOLD"),
+                    "score":     _v4_decision.get("score", 0.5),
+                    "regime":    _v4_decision.get("regime").regime if hasattr(_v4_decision.get("regime"), "regime") else "UNKNOWN",
+                    "direction": _v4_decision.get("direction", "neutral"),
+                    "ev":        _v4_decision.get("expected_value", 0.0),
+                    "size_pct":  _v4_decision.get("size_pct", 0.0),
+                    "reason":    _v4_decision.get("reason", ""),
+                    "factors":   _v4_decision.get("signal", {}).get("factors", {}),
+                    "execution_mode": _v4_decision.get("execution", None) and _v4_decision["execution"].mode,
+                }
+                logger.info(f"[V4][{pair}] {_v4_decision.get('decision')} | score={_v4_decision.get('score', 0):.3f} | {_v4_decision.get('reason', '')}")
+
+                # ── V4 BUY execution ──────────────────────────────────────────
+                _today = datetime.now().strftime("%Y-%m-%d")
+                _v4_key = f"V4:{pair}"
+                if (
+                    _v4_decision.get("decision") == "BUY"
+                    and _v4_slot.get("qty", 0) == 0
+                    and _daily_trade_count.get(_today, 0) < MAX_DAILY_TRADES
+                    and sum(1 for s in strategy_slots.values() if s.get("qty", 0) > 0) < MAX_OPEN_SLOTS
+                    and time.time() - last_buy_time.get(_v4_key, 0) > BUY_COOLDOWN_SECONDS
+                ):
+                    _v4_size_usd = _v4_decision.get("size_usd", 0)
+                    _v4_sl = _v4_decision.get("execution") and _v4_decision["execution"].stop_loss or 0
+                    if _v4_size_usd > 10 and price > 0:
+                        _v4_qty = _v4_size_usd / price
+                        if engine.buy(symbol, _v4_size_usd, price, "V4:signal"):
+                            _sl_pct = abs(price - _v4_sl) / price if _v4_sl and price else 0.03
+                            strategy_slots[_v4_key] = {
+                                "qty":       _v4_qty,
+                                "entry":     price,
+                                "peak":      price,
+                                "entry_usd": _v4_size_usd,
+                                "sl_pct":    _sl_pct,
+                                "sl_level":  _v4_sl or price * (1 - _sl_pct),
+                                "be_sl":     0.0,
+                                "realized":  0.0,
+                                "unrealized":0.0,
+                            }
+                            last_buy_time[_v4_key] = time.time()
+                            _daily_trade_count[_today] = _daily_trade_count.get(_today, 0) + 1
+                            _record_trade("BUY", pair, _v4_qty, price, _v4_size_usd, "V4:signal")
+                            logger.info(f"[V4][{pair}] ✅ BUY ${_v4_size_usd:.2f} @ ${price:,.2f} | sl={_v4_sl:.2f}")
+
+                # ── V4 SELL execution ─────────────────────────────────────────
+                elif _v4_decision.get("decision") == "SELL" and _v4_slot.get("qty", 0) > 0:
+                    _v4_qty = _v4_slot["qty"]
+                    _v4_sell_usd = _v4_qty * price
+                    _v4_entry = _v4_slot.get("entry", price)
+                    _v4_pnl   = (_v4_sell_usd - _v4_slot.get("entry_usd", _v4_sell_usd)) * (1 - TAKER_FEE)
+                    if engine.sell(symbol, _v4_qty, price, "V4:signal"):
+                        strategy_slots[_v4_key] = _empty_slot()
+                        _record_trade("SELL", pair, _v4_qty, price, _v4_sell_usd, "V4:signal")
+                        logger.info(f"[V4][{pair}] ✅ SELL ${_v4_sell_usd:.2f} @ ${price:,.2f} | pnl={_v4_pnl:.2f}")
 
                 # Macro: tendência EMA9·21·50 em 1H (idêntico ao EMA Pullback) + vol diária
                 df_1h_trend = trend_filter.candles_to_df(candles_1h)
