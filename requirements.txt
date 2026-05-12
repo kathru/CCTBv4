@@ -1,7 +1,6 @@
 requests
 pandas
 numpy
-pandas-ta
 python-dotenv
 colorama
 plyer
