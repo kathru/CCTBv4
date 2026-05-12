@@ -233,7 +233,7 @@ BTC_PAIRS  = {"BTC-USD", "ETH-USD"}
 SL_COOLDOWN_CYCLES    = 3
 
 # ── Circuit breaker + controles de risco ─────────────────────────
-MAX_DAILY_TRADES      = 10
+MAX_DAILY_TRADES      = 20
 MAX_OPEN_SLOTS        = 4
 BUY_COOLDOWN_SECONDS  = 7200
 _daily_trade_count: dict = {}  # {"YYYY-MM-DD": count}
