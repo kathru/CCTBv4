@@ -111,7 +111,7 @@
   <main class="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
     <!-- ── Portfolio Summary ── -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
       <div class="card px-4 py-3">
         <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Portfolio Total</p>
         <p id="portfolio-total" class="text-lg font-bold text-white leading-tight">R$ —</p>
@@ -146,10 +146,21 @@
           </div>
         </div>
       </div>
+      <!-- Posições Abertas -->
       <div class="card px-4 py-3">
-        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Fear &amp; Greed</p>
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Posições</p>
+        <div class="flex items-center gap-2">
+          <p id="open-positions-count" class="text-lg font-bold text-white leading-tight">0</p>
+          <span class="text-[10px] text-gray-600">/ <span id="open-positions-max" class="text-gray-600">4</span></span>
+        </div>
+        <div id="open-positions-pairs" class="text-[9px] text-gray-500 mt-0.5">nenhuma</div>
+      </div>
+
+      <!-- Fear & Greed — compacto -->
+      <div class="card px-3 py-3">
+        <p class="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">F&amp;G</p>
         <p id="fg-value" class="text-lg font-bold leading-tight text-gray-300">—</p>
-        <p id="fg-label" class="text-[10px] text-gray-500 mt-0.5">—</p>
+        <p id="fg-label" class="text-[9px] text-gray-500 mt-0.5 truncate">—</p>
       </div>
     </div>
 
@@ -911,6 +922,19 @@
     const totalTrades = (s.kpis || {}).total_trades ?? (s.trades || []).length;
     document.getElementById('trade-count').textContent = totalTrades;
     document.getElementById('trade-badge').textContent = totalTrades + ' trades';
+
+    // Posições Abertas
+    { const slots = s.slots || {};
+      const maxSlots = s.max_open_slots || 4;
+      const openPairs = CRYPTOS.filter(c => ['V4', 'manual'].some(k => (slots[`${k}:${c.pair}`] || {}).qty > 0));
+      const openCount = openPairs.length;
+      const countEl = document.getElementById('open-positions-count');
+      const maxEl   = document.getElementById('open-positions-max');
+      const pairsEl = document.getElementById('open-positions-pairs');
+      if (countEl) { countEl.textContent = openCount; countEl.style.color = openCount >= maxSlots ? '#f87171' : openCount > 0 ? '#4ade80' : '#9ca3af'; }
+      if (maxEl)   maxEl.textContent = maxSlots;
+      if (pairsEl) pairsEl.textContent = openPairs.length > 0 ? openPairs.map(c => c.sym).join(' · ') : 'nenhuma';
+    }
 
     // Buys / Sells totais + trades hoje
     const allT = s.trades || [];
