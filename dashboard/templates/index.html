@@ -1260,7 +1260,7 @@
       const alerts = v4r.alerts || [];
       if (alerts.length > 0) {
         v4AlertsEl.classList.remove('hidden');
-        v4AlertsEl.innerHTML = alerts.map(a => `<span class="bg-red-900/40 px-1.5 py-0.5 rounded">${a}</span>`).join('');
+        v4AlertsEl.innerHTML = alerts.map(a => `<span class="text-[10px] bg-red-500/10 text-red-400 px-2 py-0.5 rounded border border-red-500/20">${a}</span>`).join('');
       } else {
         v4AlertsEl.classList.add('hidden');
         v4AlertsEl.innerHTML = '';
