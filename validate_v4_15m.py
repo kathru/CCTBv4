@@ -138,13 +138,31 @@ def fetch_all_15m():
             print(f"  Salvo: {path}")
 
 
-def load_15m_candles() -> dict:
+def load_15m_candles(oos_only: bool = True) -> dict:
+    """
+    Carrega candles 15M. Por padrão, carrega apenas OOS + lookback (economiza RAM).
+    OOS = últimos OOS_MONTHS meses. Lookback = 400 candles (100h de contexto).
+    Oracle 1GB RAM: 870k candles × 3 pares = OOM. Filtra antes de carregar.
+    """
     result = {}
+    lookback = 400   # candles de contexto antes do OOS
+    oos_start_approx = int(time.time()) - OOS_MONTHS * 30 * 24 * 3600
+
     for pair in PAIRS_HIST:
         path = os.path.join(DATA_DIR, f"{pair}_15m.json")
-        if os.path.exists(path):
-            with open(path) as f:
-                result[pair] = json.load(f)
+        if not os.path.exists(path):
+            continue
+        with open(path) as f:
+            all_candles = json.load(f)
+        if oos_only:
+            # Encontra índice de início do OOS
+            oos_idx = next((i for i, c in enumerate(all_candles)
+                            if c["ts"] >= oos_start_approx), len(all_candles))
+            start = max(0, oos_idx - lookback)
+            result[pair] = all_candles[start:]
+            print(f"  {pair}: {len(result[pair])} candles (OOS+lookback, total={len(all_candles)})")
+        else:
+            result[pair] = all_candles
             print(f"  {pair}: {len(result[pair])} candles 15M")
     return result
 
