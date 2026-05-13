@@ -1006,12 +1006,15 @@ async def trading_loop():
                 "action":      _v4_risk.get("action", "normal"),
                 "sizing_mult": _v4_risk.get("sizing_mult", 1.0),
                 "alerts":      _v4_risk.get("alerts", []),
-                "var_pct":     _v4_risk.get("var_result", {}).get("var_pct", 0),
-                "ruin_prob":   _v4_risk.get("mc_result", {}).get("ruin_probability", 0),
-                "sharpe":      _v4_risk.get("mc_result", {}).get("sharpe_rolling", 0),
-                "winrate_7d":  _v4_risk.get("mc_result", {}).get("winrate_7d", 0.5),
-                "dd_alert":    _v4_risk.get("dd_result", {}).get("alert", False),
-                "meta":        _v4_risk.get("meta_summary", {}),
+                "var_pct":       _v4_risk.get("var_result", {}).get("var_pct", 0),
+                "ruin_prob":     _v4_risk.get("mc_result", {}).get("ruin_probability", 0),
+                "sharpe":        _v4_risk.get("mc_result", {}).get("sharpe_rolling", 0),
+                "winrate_7d":    _v4_risk.get("mc_result", {}).get("winrate_7d", 0.5),
+                "dd_alert":      _v4_risk.get("dd_result", {}).get("alert", False),
+                "meta":          _v4_risk.get("meta_summary", {}),
+                "prior_source":  _v4_risk.get("mc_result", {}).get("prior_source", "default"),
+                "prior_weight":  _v4_risk.get("mc_result", {}).get("prior_weight", 1.0),
+                "n_real_trades": _v4_risk.get("mc_result", {}).get("n_real_trades", 0),
             }
         except Exception as _re:
             logger.warning(f"[V4 Risk] Erro: {_re}")

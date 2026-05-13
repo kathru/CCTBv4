@@ -202,6 +202,11 @@
             </div>
           </div>
           <p class="text-[9px] text-gray-600 mt-0.5">linha amarela = meta (55%)</p>
+          <div class="flex items-center gap-1.5 mt-1">
+            <span class="text-[8px] text-gray-600">Prior:</span>
+            <span id="prior-source-badge" class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-gray-700 text-gray-400">default</span>
+            <span id="prior-weight-badge" class="text-[8px] text-gray-600"></span>
+          </div>
         </div>
 
         <!-- Sizing row -->
@@ -1319,6 +1324,28 @@
         a === 'suspend_entries' ? 'bg-orange-900 text-orange-300' :
         'bg-red-900 text-red-300'
       );
+    }
+
+    // Prior source badge
+    { const priorEl = document.getElementById('prior-source-badge');
+      const priorWtEl = document.getElementById('prior-weight-badge');
+      const src = v4r.prior_source || 'default';
+      const pw  = v4r.prior_weight != null ? v4r.prior_weight : 1.0;
+      const nr  = v4r.n_real_trades || 0;
+      if (priorEl) {
+        const isReal = src === 'okx_walkforward_8y';
+        priorEl.textContent = isReal ? '8y OKX' : 'default';
+        priorEl.className = 'text-[8px] font-bold px-1.5 py-0.5 rounded ' +
+          (isReal ? 'bg-green-900/60 text-green-400' : 'bg-gray-700 text-gray-400');
+        priorEl.title = isReal
+          ? 'Prior calibrado com 8 anos de dados OKX (walk-forward)'
+          : 'Prior padrão (crypto 2018-2024) — rode calibrate.py para melhorar';
+      }
+      if (priorWtEl) {
+        priorWtEl.textContent = pw > 0
+          ? `${Math.round(pw * 100)}% prior · ${nr} trades reais`
+          : `${nr} trades reais`;
+      }
     }
 
     // Risk metrics

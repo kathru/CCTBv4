@@ -37,9 +37,22 @@ except ImportError:
 
 # ── Configuração ──────────────────────────────────────────────────────────────
 
-API_KEY    = os.getenv("OKX_API_KEY",    "9fca5b80-6042-47bd-86d7-a8e7bcd3599e")
-SECRET_KEY = os.getenv("OKX_SECRET_KEY", "742AEEAAA45A8AEBAA29B4FFDDFE27B0")
-PASSPHRASE = os.getenv("OKX_PASSPHRASE", "Mourad#75")
+API_KEY    = os.getenv("OKX_API_KEY",    "")
+SECRET_KEY = os.getenv("OKX_SECRET_KEY", "")
+PASSPHRASE = os.getenv("OKX_PASSPHRASE", "")
+
+if not API_KEY or not SECRET_KEY or not PASSPHRASE:
+    # Tenta carregar de code.env
+    _env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "code.env")
+    if os.path.exists(_env_path):
+        for _line in open(_env_path):
+            _line = _line.strip()
+            if _line and not _line.startswith("#") and "=" in _line:
+                _k, _v = _line.split("=", 1)
+                os.environ.setdefault(_k.strip(), _v.strip())
+        API_KEY    = os.getenv("OKX_API_KEY",    "")
+        SECRET_KEY = os.getenv("OKX_SECRET_KEY", "")
+        PASSPHRASE = os.getenv("OKX_PASSPHRASE", "")
 BASE_URL   = "https://www.okx.com"
 
 PAIRS      = ["BTC-USDT", "ETH-USDT", "SOL-USDT"]

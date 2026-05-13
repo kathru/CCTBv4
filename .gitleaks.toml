@@ -1,0 +1,30 @@
+# Gitleaks — configuração de secret scanning
+# Instale: https://github.com/gitleaks/gitleaks
+# Uso: gitleaks detect --source . --verbose
+# Pre-commit: gitleaks protect --staged
+
+title = "CCTBv4 Secret Scanner"
+
+[extend]
+useDefault = true   # usa regras padrão do gitleaks (API keys, tokens, etc.)
+
+# Regras customizadas para OKX
+[[rules]]
+id          = "okx-api-key"
+description = "OKX API Key"
+regex       = '''[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'''
+keywords    = ["okx", "api_key", "OKX_API"]
+
+[[rules]]
+id          = "okx-secret"
+description = "OKX Secret Key (hex 32 chars)"
+regex       = '''[0-9A-F]{32}'''
+keywords    = ["secret_key", "SECRET_KEY", "OKX_SECRET"]
+
+# Ignora arquivos de exemplo e testes
+[allowlist]
+paths = [
+    "code.env.example",
+    "tests/",
+    ".gitleaks.toml",
+]
