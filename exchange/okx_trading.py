@@ -310,8 +310,11 @@ class OKXTradingClient:
         self._local_orders: dict[str, dict] = {}
         self._orders_log: list[dict] = self._load_orders_log()
 
-        # Mede drift inicial
-        self._sync_server_time()
+        # Mede drift inicial — não bloqueia startup se OKX estiver com rate limit
+        try:
+            self._sync_server_time()
+        except Exception:
+            pass
 
     # ── Autenticação ──────────────────────────────────────────────────────────
 
@@ -413,10 +416,12 @@ class OKXTradingClient:
     # ── Server time ───────────────────────────────────────────────────────────
 
     def _sync_server_time(self):
-        data = self._request("GET", "/api/v5/public/time", auth=False)
-        server_ms = int(data["data"][0]["ts"])
-        self._drift_guard.measure(server_ms)
-        logger.debug(f"[OKX] Server time sync — drift: {self._drift_guard._drift_s:+.3f}s")
+        # Usa requests direto (sem retry) para não travar startup em 429
+        resp = self._session.get(f"{self.BASE_URL}/api/v5/public/time", timeout=4.0)
+        if resp.ok:
+            server_ms = int(resp.json()["data"][0]["ts"])
+            self._drift_guard.measure(server_ms)
+            logger.debug(f"[OKX] Server time sync — drift: {self._drift_guard._drift_s:+.3f}s")
 
     # ── Instrument precision ──────────────────────────────────────────────────
 
