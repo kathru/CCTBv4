@@ -24,6 +24,7 @@ Uso no app.py:
 import os
 import sys
 import time
+import json
 import asyncio
 from typing import Optional
 
@@ -44,6 +45,29 @@ from strategies.meta_layer       import MetaLayer
 from strategies.portfolio_engine import evaluate_new_entry, calc_portfolio_beta
 from exchange.execution_engine   import plan_entry, update_trailing_stop
 from strategies.fee_model        import FEE
+
+# ── Regime Edge Table (carregada uma vez, atualizada quando o arquivo mudar) ──
+_REGIME_EDGE: dict = {}
+_REGIME_EDGE_TS: float = 0.0
+_REGIME_EDGE_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "data", "regime_edge.json"
+)
+
+def _load_regime_edge() -> dict:
+    """Carrega regime_edge.json com cache de 5 minutos."""
+    global _REGIME_EDGE, _REGIME_EDGE_TS
+    now = time.time()
+    if now - _REGIME_EDGE_TS < 300 and _REGIME_EDGE:
+        return _REGIME_EDGE
+    if os.path.exists(_REGIME_EDGE_PATH):
+        try:
+            with open(_REGIME_EDGE_PATH) as f:
+                _REGIME_EDGE = json.load(f)
+            _REGIME_EDGE_TS = now
+        except Exception:
+            pass
+    return _REGIME_EDGE
 
 
 class V4Orchestrator:
@@ -289,6 +313,24 @@ class V4Orchestrator:
                 "context":  market_ctx,
                 "latency_ms": int((time.time() - t0) * 1000),
             }
+
+        # ── Regime Edge Rule ──────────────────────────────────────────────────
+        # Só entra em regimes com edge líquido demonstrado historicamente.
+        # Bloqueia se regime_edge.json existe mas não mostra edge para este regime.
+        edge_table = _load_regime_edge()
+        if edge_table:
+            regime_stats = edge_table.get(regime, {})
+            if regime_stats and not regime_stats.get("has_edge", True):
+                return {
+                    "decision": "HOLD",
+                    "score":    signal["score"],
+                    "size_pct": 0.0,
+                    "reason":   f"Regime {regime} sem edge historico ({regime_stats.get('reason','n/a')})",
+                    "regime":   regime_result,
+                    "signal":   signal,
+                    "context":  market_ctx,
+                    "latency_ms": int((time.time() - t0) * 1000),
+                }
 
         return {
             "decision":        "BUY",
