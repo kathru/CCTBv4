@@ -606,16 +606,17 @@ def main():
     if args.fetch or run_all:
         fetch_all_15m()
 
-    candles_map = {}
-    if args.oos or args.regime or run_all:
-        candles_map = load_15m_candles()
-        if not candles_map:
-            print("Sem candles 15M. Execute --fetch primeiro.")
-            return
-
     edge_table = {}
     if args.regime or run_all:
         edge_table = build_regime_edge_table()
+
+    candles_map = {}
+    if args.oos or run_all:
+        candles_map = load_15m_candles()
+        if not candles_map:
+            print("Sem candles 15M. Execute --fetch primeiro.")
+            if not args.report:
+                return
 
     result_15m = None
     if args.oos or run_all:
