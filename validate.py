@@ -561,6 +561,7 @@ def evaluate_window(train_slice, test_slice, window_id,
         "base_wr":       round(base_wr, 3),
         "by_regime":     by_regime,
         "capital_final": round(capital, 2),
+        "trades":        trades,   # trade-level para report.py
     }
 
 
