@@ -42,7 +42,8 @@ _session = requests.Session()
 def fetch_history(inst_id: str, bar: str = "1H", days: int = DAYS) -> list:
     """Busca candles históricos paginando a API da OKX."""
     all_c, after = [], None
-    target = days * (3600 // {"1H":3600,"15m":900,"6H":21600}[bar])
+    bars_per_day = {"1H": 24, "15m": 96, "6H": 4}[bar]
+    target = days * bars_per_day
     for _ in range(30):
         p = {"instId": inst_id, "bar": bar, "limit": "300"}
         if after:

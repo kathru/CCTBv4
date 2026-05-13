@@ -11,7 +11,7 @@
     "max_drawdown": 0.0,
     "sharpe": 0.0,
     "sortino": 0.0,
-    "capital_final": 1000.0,
+    "capital_final": 1020.0,
     "total_fees_usd": 0.0,
     "by_regime": {},
     "by_pair": {},
@@ -30,15 +30,15 @@
       "total_taker_fee": 0.0,
       "pending_count": 0
     },
-    "oos_start": "2025-11-13",
-    "oos_end": "2026-05-12"
+    "oos_start": "2025-11-14",
+    "oos_end": "2026-05-13"
   },
   "benchmarks": {
-    "BTC": -0.1779,
-    "ETH": -0.2796,
-    "SOL": -0.3359,
-    "equal_weight": -0.2645
+    "BTC": -0.183,
+    "ETH": -0.2954,
+    "SOL": -0.3595,
+    "equal_weight": -0.2793
   },
-  "generated_at": "2026-05-13T02:44:13.529283+00:00",
+  "generated_at": "2026-05-13T17:13:43.035973+00:00",
   "engine": "V4Orchestrator+SimulatedExecutionEngine"
 }
