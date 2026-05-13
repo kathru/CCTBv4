@@ -99,20 +99,27 @@ def plan_entry(
 
     sl_pct = sl_distance / current_price
 
-    # ── Take Profits escalonados (RR 1.5:1, 2:1, 3:1) ────────────────────────
+    # ── Take Profits escalonados (RR 2:1, 3:1, 4.5:1) ────────────────────────
+    # Calibração Platt (28k amostras OKX 8 anos): WR real = 28-32%.
+    # Break-even com fees (0.52% RT): WR_min = 1/(1+RR).
+    #   RR=2.0 → WR_min=33.3%  (abaixo do WR real → EV negativo)
+    #   RR=2.5 → WR_min=28.6%  (break-even com WR=28%)
+    #   RR=3.0 → WR_min=25.0%  (EV positivo mesmo em bear parcial)
+    # Sizing 30/40/30: menos exposição no TP1 (mais conservador),
+    # mais peso no TP2 e TP3 onde o RR compensa o WR baixo.
     if direction == "long":
-        tp1 = current_price + sl_distance * 1.5
-        tp2 = current_price + sl_distance * 2.0
-        tp3 = current_price + sl_distance * 3.0
+        tp1 = current_price + sl_distance * 2.0
+        tp2 = current_price + sl_distance * 3.0
+        tp3 = current_price + sl_distance * 4.5
     else:
-        tp1 = current_price - sl_distance * 1.5
-        tp2 = current_price - sl_distance * 2.0
-        tp3 = current_price - sl_distance * 3.0
+        tp1 = current_price - sl_distance * 2.0
+        tp2 = current_price - sl_distance * 3.0
+        tp3 = current_price - sl_distance * 4.5
 
     take_profits = [
-        {"price": round(tp1, 4), "pct_of_position": 0.40, "rr": 1.5},
-        {"price": round(tp2, 4), "pct_of_position": 0.40, "rr": 2.0},
-        {"price": round(tp3, 4), "pct_of_position": 0.20, "rr": 3.0},
+        {"price": round(tp1, 4), "pct_of_position": 0.30, "rr": 2.0},
+        {"price": round(tp2, 4), "pct_of_position": 0.40, "rr": 3.0},
+        {"price": round(tp3, 4), "pct_of_position": 0.30, "rr": 4.5},
     ]
 
     # ── Tranches de entrada ───────────────────────────────────────────────────

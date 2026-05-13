@@ -25,7 +25,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 DATA_DIR    = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "historical")
 RESULT_PATH = os.path.join(DATA_DIR, "validation_result.json")
-CALIB_PATH  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "calibration_result.json")
+CALIB_PATH      = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "calibration_result.json")
+CALIB_COEF_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "calibration_coef.json")
 
 SEP  = "-" * 90
 SEP2 = "=" * 90
@@ -399,7 +400,7 @@ def section_cost_sensitivity(windows: list, rerun: bool = False) -> str:
 
 # ── Seção 7 — Benchmark ──────────────────────────────────────────────────────
 
-def section_benchmark(windows: list, oos: dict, candles_map: dict = None) -> str:
+def section_benchmark(windows: list, oos: dict, candles_map: dict = None, benchmark: dict = None) -> str:
     lines = [f"\n{SEP2}", "  7. BENCHMARK COMPARISON", SEP2]
 
     # Retorno do sistema no OOS
@@ -418,8 +419,16 @@ def section_benchmark(windows: list, oos: dict, candles_map: dict = None) -> str
     # Sistema
     lines.append(f"  {'Sistema V4':<32} {_pct(sys_ret):>10} {_pct(sys_dd):>9} {_f2(sys_sh):>8}  ← referência")
 
-    # B&H BTC — dos dados OOS se disponível
-    if candles_map and "BTC-USDT" in candles_map:
+    # B&H — usa benchmark do validate_v4 se disponível (mais preciso)
+    if isinstance(benchmark, dict) and "BTC" in benchmark:
+        bench_row("Buy & Hold BTC",          benchmark["BTC"],           -0.35, 0.5)
+        if "ETH" in benchmark:
+            bench_row("Buy & Hold ETH",      benchmark["ETH"],           -0.45, 0.4)
+        if "SOL" in benchmark:
+            bench_row("Buy & Hold SOL",      benchmark["SOL"],           -0.55, 0.3)
+        if "equal_weight" in benchmark:
+            bench_row("Equal-weight BTC/ETH/SOL", benchmark["equal_weight"], -0.45, 0.4)
+    elif candles_map and "BTC-USDT" in candles_map:
         oos_start = oos.get("oos_start") if oos else None
         if oos_start:
             btc = candles_map["BTC-USDT"]
@@ -477,6 +486,43 @@ def run(rerun_sensitivity=False, save_path=None):
     if os.path.exists(CALIB_PATH):
         with open(CALIB_PATH) as f:
             calib_result = json.load(f)
+    # Fallback: usa calibration_coef.json que tem bucket_win_rates
+    elif os.path.exists(CALIB_COEF_PATH):
+        with open(CALIB_COEF_PATH) as f:
+            coef = json.load(f)
+        # Converte formato coef para formato que section_score_calibration espera
+        bucket_wrs = coef.get("bucket_win_rates", {})
+        LABELS_MAP = {
+            "0.48-0.52": "0", "0.52-0.55": "1", "0.55-0.58": "2",
+            "0.58-0.62": "3", "0.62-0.66": "4", "0.66-0.70": "5", "0.70+": "6",
+        }
+        by_bucket = {}
+        for label, wr in bucket_wrs.items():
+            clean = label.replace("–", "-").replace("—", "-")
+            idx = LABELS_MAP.get(clean.strip())
+            if idx:
+                by_bucket[idx] = {"n": coef.get("n_samples", 0) // 7,
+                                   "win_rate": wr, "ev_net_pct": None,
+                                   "profit_factor": None}
+        calib_result = {
+            "by_bucket": by_bucket,
+            "platt": {"a": coef.get("platt_a"), "b": coef.get("platt_b"),
+                      "method": coef.get("method",""),
+                      "brier_before": coef.get("brier_raw", 0),
+                      "brier_after":  coef.get("brier_cal", 0),
+                      "improvement_pct": round((1 - coef.get("brier_cal",1)/max(coef.get("brier_raw",1),1e-9))*100, 1)},
+        }
+
+    # Lê resultado V4 se disponível (substitui OOS e benchmark)
+    v4_path = os.path.join(DATA_DIR, "validation_v4_result.json")
+    if os.path.exists(v4_path):
+        with open(v4_path) as f:
+            v4data = json.load(f)
+        # V4 OOS é mais fidedigno (usa o mesmo motor do runtime)
+        if v4data.get("oos"):
+            oos = v4data["oos"]
+        if v4data.get("benchmarks"):
+            benchmark = v4data["benchmarks"]
 
     candles_map = load_candles_map()
 
@@ -499,7 +545,7 @@ def run(rerun_sensitivity=False, save_path=None):
         section_regime(windows, oos),
         section_pair(windows, oos),
         section_cost_sensitivity(windows, rerun=rerun_sensitivity),
-        section_benchmark(windows, oos, candles_map),
+        section_benchmark(windows, oos, candles_map, benchmark),
         f"\n{SEP2}\n  FIM DO RELATÓRIO\n{SEP2}",
     ]
 

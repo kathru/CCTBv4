@@ -49,20 +49,21 @@ BLEND_SCHEDULE = [
 
 
 # ── Prior default (fallback se não houver dados históricos) ───────────────────
-# Derivado de análise manual de sistemas de trading crypto 2018–2024:
-# WR ~52%, payoff ~1.8:1, Sharpe ~0.8, max DD ~25%
+# Calibrado com 28.315 amostras reais OKX 8 anos via calibrate.py (2026-05-13).
+# WR real = 28-32% (todos os buckets de score) — não 52% como estimativa anterior.
+# Com RR efetivo 3.1× (TP 2/3/4.5× sizing 30/40/30): EV = 0.30×3.1 - 0.70 - 0.005 = +0.225
 DEFAULT_PRIOR = {
-    "returns":          [-0.015, -0.012, -0.010, -0.008, -0.006, -0.004, -0.002,
-                          0.001,  0.002,  0.003,  0.004,  0.006,  0.008,  0.010,
-                          0.012,  0.015,  0.018,  0.020,  0.025,  0.030],
-    "win_rate":         0.52,
-    "profit_factor":    1.40,
-    "avg_win_pct":      0.025,
-    "avg_loss_pct":    -0.015,
-    "sharpe":           0.80,
-    "max_drawdown":    -0.22,
-    "n_samples":        500,
-    "source":           "default_prior_crypto_2018_2024",
+    "returns":          [-0.020, -0.016, -0.013, -0.010, -0.008, -0.006, -0.004,
+                         -0.002,  0.001,  0.002,  0.004,  0.006,  0.009,  0.012,
+                          0.016,  0.022,  0.030,  0.040,  0.055,  0.075],
+    "win_rate":         0.30,   # calibrado: 28-32% histórico (era 0.52 — estimativa errada)
+    "profit_factor":    1.30,   # RR=3.1×: 0.30×3.1/0.70 ≈ 1.33
+    "avg_win_pct":      0.046,  # RR efetivo 3.1× × SL 1.5% = 4.6% ganho médio
+    "avg_loss_pct":    -0.015,  # SL típico 1.5% do portfolio
+    "sharpe":           0.60,   # AUC=0.579 → sinal marginal
+    "max_drawdown":    -0.25,
+    "n_samples":        28315,  # amostras reais do calibrate.py
+    "source":           "calibration_platt_okx_8y_28k",
 }
 
 

@@ -128,8 +128,8 @@ class V4Orchestrator:
                 market_context=market_ctx,
                 regime=regime,
                 closes_map=closes_map,
-                fee_rate=FEE.signal_ev_cost(rr=2.0),   # ~0.00173 — correto para EV
-                expected_rr=2.0,
+                fee_rate=FEE.signal_ev_cost(rr=3.0),   # RR efetivo 3.1× (TP 2/3/4.5× sizing 30/40/30)
+                expected_rr=3.0,
             )
         except Exception:
             signal = {
@@ -259,12 +259,24 @@ class V4Orchestrator:
         )
 
         # ── Decisão final ─────────────────────────────────────────────────────
-        # Threshold mínimo: score > 0.55 e EV > custo de execução
-        min_score = 0.52
-        if regime == "TREND_EXPANSION":
-            min_score = 0.55
-        elif regime == "VOLATILITY_COMPRESSION":
-            min_score = 0.57
+        # Thresholds baseados na calibração Platt (28k amostras OKX 8 anos):
+        # WR por regime walk-forward: TREND_UP=50.9%, COMPRESS=47.7%, CHOP=49.6%
+        # O score tem baixo poder discriminativo (28-32% WR entre todos os buckets),
+        # portanto o REGIME é o filtro primário; score é filtro secundário leve.
+        #
+        # TREND_EXPANSION:       regime mais favorável — threshold baixo (aceita mais entradas)
+        # VOLATILITY_COMPRESSION:potencial de expansão — threshold médio
+        # MEAN_REVERTING_CHOP:   WR próximo de random — threshold alto (muito seletivo)
+        # Outros regimes (PANIC, LIQUIDITY_VACUUM, etc.): bloqueados pela thesis_invalidation
+        min_score = {
+            "TREND_EXPANSION":        0.52,   # WR=50.9% no WF — mais agressivo
+            "TREND_EXHAUSTION":       0.60,   # tendência madura — conservador
+            "VOLATILITY_COMPRESSION": 0.56,   # pré-expansão — moderado
+            "MEAN_REVERTING_CHOP":    0.65,   # WR~random — muito seletivo
+            "HIGH_CORRELATION_RISK":  0.68,   # risco sistêmico — raramente entra
+            "PANIC_LIQUIDATION":      0.99,   # bloqueado (thesis_invalidation cuida da saída)
+            "LIQUIDITY_VACUUM":       0.99,   # bloqueado
+        }.get(regime, 0.60)
 
         if signal["score"] < min_score:
             return {
