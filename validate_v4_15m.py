@@ -120,9 +120,19 @@ def fetch_all_15m():
     env = _load_env()
     os.makedirs(DATA_DIR, exist_ok=True)
     for pair in PAIRS_HIST:
+        path = os.path.join(DATA_DIR, f"{pair}_15m.json")
+        # Pula se já existe e tem mais de 100k candles (fetch completo)
+        if os.path.exists(path):
+            try:
+                with open(path) as f:
+                    existing = json.load(f)
+                if len(existing) > 100000:
+                    print(f"  {pair}: {len(existing)} candles já salvos — pulando")
+                    continue
+            except Exception:
+                pass
         candles = fetch_15m(pair, env)
         if candles:
-            path = os.path.join(DATA_DIR, f"{pair}_15m.json")
             with open(path, "w") as f:
                 json.dump(candles, f)
             print(f"  Salvo: {path}")
