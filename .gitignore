@@ -33,6 +33,15 @@ logs/
 data/*.json
 data/portfolio_history.json
 
+# Resultados de validação e calibração — commitados explicitamente
+!data/calibration_coef.json
+!data/risk_prior.json
+!data/regime_edge.json
+!data/final_report.json
+!data/historical/validation_result.json
+!data/historical/validation_v4_result.json
+!data/historical/validation_v4_15m_result.json
+
 # OS
 .DS_Store
 Thumbs.db

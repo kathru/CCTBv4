@@ -1,0 +1,2194 @@
+{
+  "windows": [
+    {
+      "window": 1,
+      "train_start": "2018-01",
+      "test_start": "2018-07",
+      "n_trades": 45,
+      "n_train_samples": 4218,
+      "win_rate": 0.5111,
+      "profit_factor": 1.917,
+      "total_return": 0.0631,
+      "max_drawdown": -0.0184,
+      "sharpe": 24.732,
+      "auc_train": 0.56,
+      "base_wr": 0.427,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 3,
+          "wr": 0.333,
+          "pnl": -0.32
+        },
+        "CHOP": {
+          "n": 29,
+          "wr": 0.483,
+          "pnl": 33.6
+        },
+        "COMPRESS": {
+          "n": 13,
+          "wr": 0.615,
+          "pnl": 29.77
+        }
+      },
+      "capital_final": 1063.06
+    },
+    {
+      "window": 2,
+      "train_start": "2018-02",
+      "test_start": "2018-08",
+      "n_trades": 46,
+      "n_train_samples": 4218,
+      "win_rate": 0.5,
+      "profit_factor": 1.971,
+      "total_return": 0.0665,
+      "max_drawdown": -0.0186,
+      "sharpe": 25.029,
+      "auc_train": 0.563,
+      "base_wr": 0.418,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 4,
+          "wr": 0.25,
+          "pnl": -2.91
+        },
+        "CHOP": {
+          "n": 23,
+          "wr": 0.435,
+          "pnl": 21.41
+        },
+        "COMPRESS": {
+          "n": 19,
+          "wr": 0.632,
+          "pnl": 48.02
+        }
+      },
+      "capital_final": 1066.52
+    },
+    {
+      "window": 3,
+      "train_start": "2018-03",
+      "test_start": "2018-09",
+      "n_trades": 3,
+      "n_train_samples": 4218,
+      "win_rate": 1.0,
+      "profit_factor": 15514500.0,
+      "total_return": 0.0155,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.565,
+      "base_wr": 0.414,
+      "by_regime": {
+        "CHOP": {
+          "n": 2,
+          "wr": 1.0,
+          "pnl": 10.71
+        },
+        "COMPRESS": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 4.8
+        }
+      },
+      "capital_final": 1015.51
+    },
+    {
+      "window": 4,
+      "train_start": "2018-04",
+      "test_start": "2018-10",
+      "n_trades": 6,
+      "n_train_samples": 4218,
+      "win_rate": 0.6667,
+      "profit_factor": 3.768,
+      "total_return": 0.0163,
+      "max_drawdown": -0.0059,
+      "sharpe": 0.0,
+      "auc_train": 0.573,
+      "base_wr": 0.407,
+      "by_regime": {
+        "CHOP": {
+          "n": 5,
+          "wr": 0.6,
+          "pnl": 10.7
+        },
+        "COMPRESS": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 5.64
+        }
+      },
+      "capital_final": 1016.34
+    },
+    {
+      "window": 5,
+      "train_start": "2018-05",
+      "test_start": "2018-11",
+      "n_trades": 25,
+      "n_train_samples": 4218,
+      "win_rate": 0.52,
+      "profit_factor": 2.046,
+      "total_return": 0.0383,
+      "max_drawdown": -0.0136,
+      "sharpe": 26.508,
+      "auc_train": 0.595,
+      "base_wr": 0.375,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 2,
+          "wr": 0.5,
+          "pnl": 3.31
+        },
+        "CHOP": {
+          "n": 21,
+          "wr": 0.476,
+          "pnl": 23.69
+        },
+        "COMPRESS": {
+          "n": 2,
+          "wr": 1.0,
+          "pnl": 11.27
+        }
+      },
+      "capital_final": 1038.27
+    },
+    {
+      "window": 6,
+      "train_start": "2018-06",
+      "test_start": "2018-12",
+      "n_trades": 20,
+      "n_train_samples": 4218,
+      "win_rate": 0.35,
+      "profit_factor": 1.003,
+      "total_return": 0.0001,
+      "max_drawdown": -0.0194,
+      "sharpe": 0.259,
+      "auc_train": 0.593,
+      "base_wr": 0.373,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 2,
+          "wr": 0.5,
+          "pnl": 3.31
+        },
+        "CHOP": {
+          "n": 15,
+          "wr": 0.333,
+          "pnl": -2.68
+        },
+        "COMPRESS": {
+          "n": 3,
+          "wr": 0.333,
+          "pnl": -0.52
+        }
+      },
+      "capital_final": 1000.11
+    },
+    {
+      "window": 7,
+      "train_start": "2018-07",
+      "test_start": "2019-01",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.595,
+      "base_wr": 0.378,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 8,
+      "train_start": "2018-08",
+      "test_start": "2019-02",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.602,
+      "base_wr": 0.371,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 9,
+      "train_start": "2018-09",
+      "test_start": "2019-03",
+      "n_trades": 1,
+      "n_train_samples": 4218,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "total_return": -0.0028,
+      "max_drawdown": -0.0028,
+      "sharpe": 0.0,
+      "auc_train": 0.608,
+      "base_wr": 0.358,
+      "by_regime": {
+        "CHOP": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -2.76
+        }
+      },
+      "capital_final": 997.24
+    },
+    {
+      "window": 10,
+      "train_start": "2018-10",
+      "test_start": "2019-04",
+      "n_trades": 12,
+      "n_train_samples": 4218,
+      "win_rate": 0.25,
+      "profit_factor": 0.598,
+      "total_return": -0.0106,
+      "max_drawdown": -0.0205,
+      "sharpe": -18.513,
+      "auc_train": 0.61,
+      "base_wr": 0.364,
+      "by_regime": {
+        "CHOP": {
+          "n": 5,
+          "wr": 0.2,
+          "pnl": -5.35
+        },
+        "COMPRESS": {
+          "n": 7,
+          "wr": 0.286,
+          "pnl": -5.26
+        }
+      },
+      "capital_final": 989.38
+    },
+    {
+      "window": 11,
+      "train_start": "2018-11",
+      "test_start": "2019-05",
+      "n_trades": 11,
+      "n_train_samples": 4218,
+      "win_rate": 0.1818,
+      "profit_factor": 0.425,
+      "total_return": -0.0149,
+      "max_drawdown": -0.0228,
+      "sharpe": -31.16,
+      "auc_train": 0.583,
+      "base_wr": 0.38,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 2,
+          "wr": 0.5,
+          "pnl": 2.63
+        },
+        "CHOP": {
+          "n": 3,
+          "wr": 0.0,
+          "pnl": -8.45
+        },
+        "COMPRESS": {
+          "n": 6,
+          "wr": 0.167,
+          "pnl": -9.05
+        }
+      },
+      "capital_final": 985.14
+    },
+    {
+      "window": 12,
+      "train_start": "2018-12",
+      "test_start": "2019-06",
+      "n_trades": 4,
+      "n_train_samples": 4218,
+      "win_rate": 0.5,
+      "profit_factor": 1.845,
+      "total_return": 0.0049,
+      "max_drawdown": -0.0057,
+      "sharpe": 0.0,
+      "auc_train": 0.575,
+      "base_wr": 0.384,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 5.18
+        },
+        "CHOP": {
+          "n": 2,
+          "wr": 0.0,
+          "pnl": -5.74
+        },
+        "COMPRESS": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 5.41
+        }
+      },
+      "capital_final": 1004.85
+    },
+    {
+      "window": 13,
+      "train_start": "2019-01",
+      "test_start": "2019-07",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.583,
+      "base_wr": 0.395,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 14,
+      "train_start": "2019-02",
+      "test_start": "2019-08",
+      "n_trades": 5,
+      "n_train_samples": 4218,
+      "win_rate": 1.0,
+      "profit_factor": 24219100.0,
+      "total_return": 0.0242,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.578,
+      "base_wr": 0.413,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 5.83
+        },
+        "COMPRESS": {
+          "n": 4,
+          "wr": 1.0,
+          "pnl": 18.39
+        }
+      },
+      "capital_final": 1024.22
+    },
+    {
+      "window": 15,
+      "train_start": "2019-03",
+      "test_start": "2019-09",
+      "n_trades": 8,
+      "n_train_samples": 4218,
+      "win_rate": 0.75,
+      "profit_factor": 5.963,
+      "total_return": 0.0224,
+      "max_drawdown": -0.0029,
+      "sharpe": 0.0,
+      "auc_train": 0.575,
+      "base_wr": 0.41,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 5,
+          "wr": 0.6,
+          "pnl": 9.48
+        },
+        "COMPRESS": {
+          "n": 3,
+          "wr": 1.0,
+          "pnl": 12.95
+        }
+      },
+      "capital_final": 1022.43
+    },
+    {
+      "window": 16,
+      "train_start": "2019-04",
+      "test_start": "2019-10",
+      "n_trades": 3,
+      "n_train_samples": 4218,
+      "win_rate": 0.3333,
+      "profit_factor": 0.679,
+      "total_return": -0.0014,
+      "max_drawdown": -0.0027,
+      "sharpe": 0.0,
+      "auc_train": 0.568,
+      "base_wr": 0.407,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 2,
+          "wr": 0.5,
+          "pnl": 0.26
+        },
+        "COMPRESS": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -1.66
+        }
+      },
+      "capital_final": 998.6
+    },
+    {
+      "window": 17,
+      "train_start": "2019-05",
+      "test_start": "2019-11",
+      "n_trades": 1,
+      "n_train_samples": 4218,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "total_return": -0.0019,
+      "max_drawdown": -0.0019,
+      "sharpe": 0.0,
+      "auc_train": 0.568,
+      "base_wr": 0.405,
+      "by_regime": {
+        "CHOP": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -1.88
+        }
+      },
+      "capital_final": 998.12
+    },
+    {
+      "window": 18,
+      "train_start": "2019-06",
+      "test_start": "2019-12",
+      "n_trades": 1,
+      "n_train_samples": 4218,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "total_return": -0.002,
+      "max_drawdown": -0.002,
+      "sharpe": 0.0,
+      "auc_train": 0.579,
+      "base_wr": 0.386,
+      "by_regime": {
+        "CHOP": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -2.03
+        }
+      },
+      "capital_final": 997.97
+    },
+    {
+      "window": 19,
+      "train_start": "2019-07",
+      "test_start": "2020-01",
+      "n_trades": 7,
+      "n_train_samples": 4218,
+      "win_rate": 0.2857,
+      "profit_factor": 0.914,
+      "total_return": -0.0012,
+      "max_drawdown": -0.0061,
+      "sharpe": 0.0,
+      "auc_train": 0.576,
+      "base_wr": 0.368,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -1.3
+        },
+        "CHOP": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -2.82
+        },
+        "COMPRESS": {
+          "n": 5,
+          "wr": 0.4,
+          "pnl": 2.97
+        }
+      },
+      "capital_final": 998.85
+    },
+    {
+      "window": 20,
+      "train_start": "2019-08",
+      "test_start": "2020-02",
+      "n_trades": 17,
+      "n_train_samples": 4218,
+      "win_rate": 0.3529,
+      "profit_factor": 1.094,
+      "total_return": 0.0027,
+      "max_drawdown": -0.0065,
+      "sharpe": 3.255,
+      "auc_train": 0.575,
+      "base_wr": 0.364,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 3,
+          "wr": 0.333,
+          "pnl": -0.98
+        },
+        "CHOP": {
+          "n": 9,
+          "wr": 0.222,
+          "pnl": -6.4
+        },
+        "COMPRESS": {
+          "n": 5,
+          "wr": 0.6,
+          "pnl": 10.03
+        }
+      },
+      "capital_final": 1002.65
+    },
+    {
+      "window": 21,
+      "train_start": "2019-09",
+      "test_start": "2020-03",
+      "n_trades": 22,
+      "n_train_samples": 4218,
+      "win_rate": 0.4545,
+      "profit_factor": 1.708,
+      "total_return": 0.0205,
+      "max_drawdown": -0.0088,
+      "sharpe": 18.987,
+      "auc_train": 0.559,
+      "base_wr": 0.376,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 12,
+          "wr": 0.5,
+          "pnl": 17.89
+        },
+        "CHOP": {
+          "n": 10,
+          "wr": 0.4,
+          "pnl": 2.63
+        }
+      },
+      "capital_final": 1020.52
+    },
+    {
+      "window": 22,
+      "train_start": "2019-10",
+      "test_start": "2020-04",
+      "n_trades": 3,
+      "n_train_samples": 4218,
+      "win_rate": 0.6667,
+      "profit_factor": 3.254,
+      "total_return": 0.0062,
+      "max_drawdown": -0.0027,
+      "sharpe": 0.0,
+      "auc_train": 0.552,
+      "base_wr": 0.383,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 3,
+          "wr": 0.667,
+          "pnl": 6.18
+        }
+      },
+      "capital_final": 1006.18
+    },
+    {
+      "window": 23,
+      "train_start": "2019-11",
+      "test_start": "2020-05",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.551,
+      "base_wr": 0.389,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 24,
+      "train_start": "2019-12",
+      "test_start": "2020-06",
+      "n_trades": 7,
+      "n_train_samples": 4218,
+      "win_rate": 0.4286,
+      "profit_factor": 2.416,
+      "total_return": 0.0059,
+      "max_drawdown": -0.0029,
+      "sharpe": 0.0,
+      "auc_train": 0.551,
+      "base_wr": 0.401,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 4,
+          "wr": 0.5,
+          "pnl": 7.25
+        },
+        "CHOP": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 1.6
+        },
+        "COMPRESS": {
+          "n": 2,
+          "wr": 0.0,
+          "pnl": -2.94
+        }
+      },
+      "capital_final": 1005.92
+    },
+    {
+      "window": 25,
+      "train_start": "2020-01",
+      "test_start": "2020-07",
+      "n_trades": 6,
+      "n_train_samples": 4218,
+      "win_rate": 0.6667,
+      "profit_factor": 7.288,
+      "total_return": 0.0097,
+      "max_drawdown": -0.0009,
+      "sharpe": 0.0,
+      "auc_train": 0.554,
+      "base_wr": 0.395,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 4,
+          "wr": 0.5,
+          "pnl": 7.0
+        },
+        "CHOP": {
+          "n": 2,
+          "wr": 1.0,
+          "pnl": 2.7
+        }
+      },
+      "capital_final": 1009.7
+    },
+    {
+      "window": 26,
+      "train_start": "2020-02",
+      "test_start": "2020-08",
+      "n_trades": 1,
+      "n_train_samples": 4218,
+      "win_rate": 1.0,
+      "profit_factor": 1454000.0,
+      "total_return": 0.0015,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.549,
+      "base_wr": 0.392,
+      "by_regime": {
+        "CHOP": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 1.45
+        }
+      },
+      "capital_final": 1001.45
+    },
+    {
+      "window": 27,
+      "train_start": "2020-03",
+      "test_start": "2020-09",
+      "n_trades": 5,
+      "n_train_samples": 4218,
+      "win_rate": 0.8,
+      "profit_factor": 12.0,
+      "total_return": 0.0093,
+      "max_drawdown": -0.0008,
+      "sharpe": 0.0,
+      "auc_train": 0.566,
+      "base_wr": 0.387,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 2,
+          "wr": 1.0,
+          "pnl": 5.54
+        },
+        "CHOP": {
+          "n": 3,
+          "wr": 0.667,
+          "pnl": 3.74
+        }
+      },
+      "capital_final": 1009.28
+    },
+    {
+      "window": 28,
+      "train_start": "2020-04",
+      "test_start": "2020-10",
+      "n_trades": 6,
+      "n_train_samples": 4218,
+      "win_rate": 0.6667,
+      "profit_factor": 5.003,
+      "total_return": 0.0121,
+      "max_drawdown": -0.0022,
+      "sharpe": 0.0,
+      "auc_train": 0.566,
+      "base_wr": 0.382,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 4.42
+        },
+        "CHOP": {
+          "n": 3,
+          "wr": 0.333,
+          "pnl": -0.03
+        },
+        "COMPRESS": {
+          "n": 2,
+          "wr": 1.0,
+          "pnl": 7.72
+        }
+      },
+      "capital_final": 1012.12
+    },
+    {
+      "window": 29,
+      "train_start": "2020-05",
+      "test_start": "2020-10",
+      "n_trades": 3,
+      "n_train_samples": 4218,
+      "win_rate": 0.6667,
+      "profit_factor": 5.678,
+      "total_return": 0.0048,
+      "max_drawdown": -0.001,
+      "sharpe": 0.0,
+      "auc_train": 0.567,
+      "base_wr": 0.378,
+      "by_regime": {
+        "CHOP": {
+          "n": 2,
+          "wr": 0.5,
+          "pnl": 2.44
+        },
+        "COMPRESS": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 2.38
+        }
+      },
+      "capital_final": 1004.82
+    },
+    {
+      "window": 30,
+      "train_start": "2020-06",
+      "test_start": "2020-11",
+      "n_trades": 39,
+      "n_train_samples": 4218,
+      "win_rate": 0.4103,
+      "profit_factor": 1.53,
+      "total_return": 0.0318,
+      "max_drawdown": -0.0181,
+      "sharpe": 15.267,
+      "auc_train": 0.563,
+      "base_wr": 0.379,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 4,
+          "wr": 0.5,
+          "pnl": 7.84
+        },
+        "CHOP": {
+          "n": 24,
+          "wr": 0.292,
+          "pnl": -4.01
+        },
+        "COMPRESS": {
+          "n": 11,
+          "wr": 0.636,
+          "pnl": 27.98
+        }
+      },
+      "capital_final": 1031.81
+    },
+    {
+      "window": 31,
+      "train_start": "2020-07",
+      "test_start": "2020-12",
+      "n_trades": 53,
+      "n_train_samples": 4218,
+      "win_rate": 0.4528,
+      "profit_factor": 1.678,
+      "total_return": 0.0526,
+      "max_drawdown": -0.0178,
+      "sharpe": 18.847,
+      "auc_train": 0.547,
+      "base_wr": 0.389,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 14,
+          "wr": 0.571,
+          "pnl": 27.0
+        },
+        "CHOP": {
+          "n": 22,
+          "wr": 0.409,
+          "pnl": 11.89
+        },
+        "COMPRESS": {
+          "n": 17,
+          "wr": 0.412,
+          "pnl": 13.71
+        }
+      },
+      "capital_final": 1052.6
+    },
+    {
+      "window": 32,
+      "train_start": "2020-08",
+      "test_start": "2021-01",
+      "n_trades": 13,
+      "n_train_samples": 4218,
+      "win_rate": 0.6154,
+      "profit_factor": 3.01,
+      "total_return": 0.0268,
+      "max_drawdown": -0.0052,
+      "sharpe": 41.158,
+      "auc_train": 0.554,
+      "base_wr": 0.394,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 5,
+          "wr": 0.8,
+          "pnl": 18.41
+        },
+        "CHOP": {
+          "n": 5,
+          "wr": 0.6,
+          "pnl": 8.98
+        },
+        "COMPRESS": {
+          "n": 3,
+          "wr": 0.333,
+          "pnl": -0.57
+        }
+      },
+      "capital_final": 1026.81
+    },
+    {
+      "window": 33,
+      "train_start": "2020-09",
+      "test_start": "2021-02",
+      "n_trades": 3,
+      "n_train_samples": 4218,
+      "win_rate": 1.0,
+      "profit_factor": 14587300.0,
+      "total_return": 0.0146,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.556,
+      "base_wr": 0.415,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 3.87
+        },
+        "CHOP": {
+          "n": 2,
+          "wr": 1.0,
+          "pnl": 10.72
+        }
+      },
+      "capital_final": 1014.59
+    },
+    {
+      "window": 34,
+      "train_start": "2020-10",
+      "test_start": "2021-03",
+      "n_trades": 27,
+      "n_train_samples": 4218,
+      "win_rate": 0.5926,
+      "profit_factor": 2.44,
+      "total_return": 0.0467,
+      "max_drawdown": -0.0119,
+      "sharpe": 33.604,
+      "auc_train": 0.557,
+      "base_wr": 0.428,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 5,
+          "wr": 0.2,
+          "pnl": -6.34
+        },
+        "CHOP": {
+          "n": 13,
+          "wr": 0.692,
+          "pnl": 34.06
+        },
+        "COMPRESS": {
+          "n": 9,
+          "wr": 0.667,
+          "pnl": 18.94
+        }
+      },
+      "capital_final": 1046.67
+    },
+    {
+      "window": 35,
+      "train_start": "2020-10",
+      "test_start": "2021-04",
+      "n_trades": 28,
+      "n_train_samples": 4218,
+      "win_rate": 0.6071,
+      "profit_factor": 2.694,
+      "total_return": 0.0553,
+      "max_drawdown": -0.0119,
+      "sharpe": 37.543,
+      "auc_train": 0.552,
+      "base_wr": 0.434,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 5,
+          "wr": 0.2,
+          "pnl": -6.34
+        },
+        "CHOP": {
+          "n": 11,
+          "wr": 0.727,
+          "pnl": 32.19
+        },
+        "COMPRESS": {
+          "n": 12,
+          "wr": 0.667,
+          "pnl": 29.47
+        }
+      },
+      "capital_final": 1055.32
+    },
+    {
+      "window": 36,
+      "train_start": "2020-11",
+      "test_start": "2021-05",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.547,
+      "base_wr": 0.444,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 37,
+      "train_start": "2020-12",
+      "test_start": "2021-06",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.555,
+      "base_wr": 0.448,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 38,
+      "train_start": "2021-01",
+      "test_start": "2021-07",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.558,
+      "base_wr": 0.442,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 39,
+      "train_start": "2021-02",
+      "test_start": "2021-08",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.555,
+      "base_wr": 0.434,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 40,
+      "train_start": "2021-03",
+      "test_start": "2021-09",
+      "n_trades": 1,
+      "n_train_samples": 4218,
+      "win_rate": 1.0,
+      "profit_factor": 6020700.0,
+      "total_return": 0.006,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.559,
+      "base_wr": 0.418,
+      "by_regime": {
+        "CHOP": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 6.02
+        }
+      },
+      "capital_final": 1006.02
+    },
+    {
+      "window": 41,
+      "train_start": "2021-04",
+      "test_start": "2021-10",
+      "n_trades": 1,
+      "n_train_samples": 4218,
+      "win_rate": 1.0,
+      "profit_factor": 5733200.0,
+      "total_return": 0.0057,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.553,
+      "base_wr": 0.411,
+      "by_regime": {
+        "CHOP": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 5.73
+        }
+      },
+      "capital_final": 1005.73
+    },
+    {
+      "window": 42,
+      "train_start": "2021-05",
+      "test_start": "2021-11",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.546,
+      "base_wr": 0.402,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 43,
+      "train_start": "2021-06",
+      "test_start": "2021-12",
+      "n_trades": 3,
+      "n_train_samples": 4218,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "total_return": -0.0063,
+      "max_drawdown": -0.0063,
+      "sharpe": 0.0,
+      "auc_train": 0.543,
+      "base_wr": 0.396,
+      "by_regime": {
+        "CHOP": {
+          "n": 3,
+          "wr": 0.0,
+          "pnl": -6.25
+        }
+      },
+      "capital_final": 993.75
+    },
+    {
+      "window": 44,
+      "train_start": "2021-07",
+      "test_start": "2022-01",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.543,
+      "base_wr": 0.385,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 45,
+      "train_start": "2021-08",
+      "test_start": "2022-02",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.551,
+      "base_wr": 0.39,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 46,
+      "train_start": "2021-09",
+      "test_start": "2022-03",
+      "n_trades": 26,
+      "n_train_samples": 4218,
+      "win_rate": 0.5385,
+      "profit_factor": 2.249,
+      "total_return": 0.045,
+      "max_drawdown": -0.0144,
+      "sharpe": 29.012,
+      "auc_train": 0.563,
+      "base_wr": 0.403,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 10,
+          "wr": 0.5,
+          "pnl": 11.35
+        },
+        "CHOP": {
+          "n": 11,
+          "wr": 0.636,
+          "pnl": 32.37
+        },
+        "COMPRESS": {
+          "n": 5,
+          "wr": 0.4,
+          "pnl": 1.29
+        }
+      },
+      "capital_final": 1045.01
+    },
+    {
+      "window": 47,
+      "train_start": "2021-10",
+      "test_start": "2022-04",
+      "n_trades": 53,
+      "n_train_samples": 4218,
+      "win_rate": 0.4528,
+      "profit_factor": 1.464,
+      "total_return": 0.0384,
+      "max_drawdown": -0.0232,
+      "sharpe": 13.733,
+      "auc_train": 0.566,
+      "base_wr": 0.397,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 18,
+          "wr": 0.5,
+          "pnl": 17.09
+        },
+        "CHOP": {
+          "n": 16,
+          "wr": 0.562,
+          "pnl": 33.64
+        },
+        "COMPRESS": {
+          "n": 19,
+          "wr": 0.316,
+          "pnl": -12.35
+        }
+      },
+      "capital_final": 1038.38
+    },
+    {
+      "window": 48,
+      "train_start": "2021-11",
+      "test_start": "2022-05",
+      "n_trades": 27,
+      "n_train_samples": 4218,
+      "win_rate": 0.3333,
+      "profit_factor": 0.728,
+      "total_return": -0.012,
+      "max_drawdown": -0.0186,
+      "sharpe": -11.567,
+      "auc_train": 0.579,
+      "base_wr": 0.399,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 11,
+          "wr": 0.455,
+          "pnl": 4.63
+        },
+        "CHOP": {
+          "n": 6,
+          "wr": 0.333,
+          "pnl": -2.02
+        },
+        "COMPRESS": {
+          "n": 10,
+          "wr": 0.2,
+          "pnl": -14.61
+        }
+      },
+      "capital_final": 988.0
+    },
+    {
+      "window": 49,
+      "train_start": "2021-12",
+      "test_start": "2022-06",
+      "n_trades": 6,
+      "n_train_samples": 4218,
+      "win_rate": 0.6667,
+      "profit_factor": 3.745,
+      "total_return": 0.0096,
+      "max_drawdown": -0.0034,
+      "sharpe": 0.0,
+      "auc_train": 0.564,
+      "base_wr": 0.399,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 3,
+          "wr": 1.0,
+          "pnl": 9.93
+        },
+        "CHOP": {
+          "n": 3,
+          "wr": 0.333,
+          "pnl": -0.37
+        }
+      },
+      "capital_final": 1009.56
+    },
+    {
+      "window": 50,
+      "train_start": "2022-01",
+      "test_start": "2022-07",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.565,
+      "base_wr": 0.402,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 51,
+      "train_start": "2022-02",
+      "test_start": "2022-08",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.565,
+      "base_wr": 0.402,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 52,
+      "train_start": "2022-03",
+      "test_start": "2022-09",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.563,
+      "base_wr": 0.394,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 53,
+      "train_start": "2022-04",
+      "test_start": "2022-10",
+      "n_trades": 2,
+      "n_train_samples": 4218,
+      "win_rate": 0.5,
+      "profit_factor": 3.025,
+      "total_return": 0.0034,
+      "max_drawdown": -0.0017,
+      "sharpe": 0.0,
+      "auc_train": 0.56,
+      "base_wr": 0.393,
+      "by_regime": {
+        "CHOP": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 5.08
+        },
+        "COMPRESS": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -1.68
+        }
+      },
+      "capital_final": 1003.4
+    },
+    {
+      "window": 54,
+      "train_start": "2022-05",
+      "test_start": "2022-11",
+      "n_trades": 4,
+      "n_train_samples": 4218,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "total_return": -0.0067,
+      "max_drawdown": -0.0067,
+      "sharpe": 0.0,
+      "auc_train": 0.554,
+      "base_wr": 0.387,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 2,
+          "wr": 0.0,
+          "pnl": -3.16
+        },
+        "CHOP": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -1.8
+        },
+        "COMPRESS": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -1.74
+        }
+      },
+      "capital_final": 993.3
+    },
+    {
+      "window": 55,
+      "train_start": "2022-06",
+      "test_start": "2022-12",
+      "n_trades": 2,
+      "n_train_samples": 4218,
+      "win_rate": 0.5,
+      "profit_factor": 1.901,
+      "total_return": 0.0013,
+      "max_drawdown": -0.0014,
+      "sharpe": 0.0,
+      "auc_train": 0.579,
+      "base_wr": 0.378,
+      "by_regime": {
+        "CHOP": {
+          "n": 2,
+          "wr": 0.5,
+          "pnl": 1.28
+        }
+      },
+      "capital_final": 1001.28
+    },
+    {
+      "window": 56,
+      "train_start": "2022-07",
+      "test_start": "2023-01",
+      "n_trades": 7,
+      "n_train_samples": 4218,
+      "win_rate": 0.5714,
+      "profit_factor": 2.125,
+      "total_return": 0.0051,
+      "max_drawdown": -0.0015,
+      "sharpe": 0.0,
+      "auc_train": 0.591,
+      "base_wr": 0.36,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 3,
+          "wr": 0.333,
+          "pnl": -0.68
+        },
+        "CHOP": {
+          "n": 3,
+          "wr": 0.667,
+          "pnl": 3.76
+        },
+        "COMPRESS": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 1.98
+        }
+      },
+      "capital_final": 1005.06
+    },
+    {
+      "window": 57,
+      "train_start": "2022-08",
+      "test_start": "2023-02",
+      "n_trades": 3,
+      "n_train_samples": 4218,
+      "win_rate": 0.3333,
+      "profit_factor": 0.706,
+      "total_return": -0.0007,
+      "max_drawdown": -0.0014,
+      "sharpe": 0.0,
+      "auc_train": 0.583,
+      "base_wr": 0.35,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -1.41
+        },
+        "CHOP": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 1.8
+        },
+        "COMPRESS": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -1.14
+        }
+      },
+      "capital_final": 999.25
+    },
+    {
+      "window": 58,
+      "train_start": "2022-09",
+      "test_start": "2023-03",
+      "n_trades": 3,
+      "n_train_samples": 4218,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "total_return": -0.0034,
+      "max_drawdown": -0.0034,
+      "sharpe": 0.0,
+      "auc_train": 0.589,
+      "base_wr": 0.348,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 2,
+          "wr": 0.0,
+          "pnl": -2.22
+        },
+        "COMPRESS": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -1.17
+        }
+      },
+      "capital_final": 996.62
+    },
+    {
+      "window": 59,
+      "train_start": "2022-10",
+      "test_start": "2023-04",
+      "n_trades": 3,
+      "n_train_samples": 4218,
+      "win_rate": 0.3333,
+      "profit_factor": 1.026,
+      "total_return": 0.0001,
+      "max_drawdown": -0.0016,
+      "sharpe": 0.0,
+      "auc_train": 0.597,
+      "base_wr": 0.345,
+      "by_regime": {
+        "CHOP": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -1.6
+        },
+        "COMPRESS": {
+          "n": 2,
+          "wr": 0.5,
+          "pnl": 1.68
+        }
+      },
+      "capital_final": 1000.08
+    },
+    {
+      "window": 60,
+      "train_start": "2022-11",
+      "test_start": "2023-05",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.595,
+      "base_wr": 0.336,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 61,
+      "train_start": "2022-12",
+      "test_start": "2023-06",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.588,
+      "base_wr": 0.335,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 62,
+      "train_start": "2023-01",
+      "test_start": "2023-07",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.588,
+      "base_wr": 0.342,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 63,
+      "train_start": "2023-02",
+      "test_start": "2023-08",
+      "n_trades": 0,
+      "n_train_samples": 4218,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.596,
+      "base_wr": 0.324,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 64,
+      "train_start": "2023-03",
+      "test_start": "2023-09",
+      "n_trades": 0,
+      "n_train_samples": 4028,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.601,
+      "base_wr": 0.302,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 65,
+      "train_start": "2023-04",
+      "test_start": "2023-10",
+      "n_trades": 0,
+      "n_train_samples": 3788,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.605,
+      "base_wr": 0.291,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 66,
+      "train_start": "2023-05",
+      "test_start": "2023-11",
+      "n_trades": 5,
+      "n_train_samples": 3548,
+      "win_rate": 0.8,
+      "profit_factor": 8.902,
+      "total_return": 0.0093,
+      "max_drawdown": -0.0012,
+      "sharpe": 0.0,
+      "auc_train": 0.613,
+      "base_wr": 0.303,
+      "by_regime": {
+        "CHOP": {
+          "n": 5,
+          "wr": 0.8,
+          "pnl": 9.27
+        }
+      },
+      "capital_final": 1009.27
+    },
+    {
+      "window": 67,
+      "train_start": "2023-06",
+      "test_start": "2023-12",
+      "n_trades": 18,
+      "n_train_samples": 3308,
+      "win_rate": 0.6667,
+      "profit_factor": 3.266,
+      "total_return": 0.0185,
+      "max_drawdown": -0.0033,
+      "sharpe": 43.016,
+      "auc_train": 0.619,
+      "base_wr": 0.299,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 3,
+          "wr": 0.667,
+          "pnl": 3.41
+        },
+        "CHOP": {
+          "n": 10,
+          "wr": 0.7,
+          "pnl": 12.55
+        },
+        "COMPRESS": {
+          "n": 5,
+          "wr": 0.6,
+          "pnl": 2.53
+        }
+      },
+      "capital_final": 1018.5
+    },
+    {
+      "window": 68,
+      "train_start": "2023-07",
+      "test_start": "2024-01",
+      "n_trades": 35,
+      "n_train_samples": 3068,
+      "win_rate": 0.5714,
+      "profit_factor": 2.923,
+      "total_return": 0.0452,
+      "max_drawdown": -0.0039,
+      "sharpe": 35.236,
+      "auc_train": 0.627,
+      "base_wr": 0.302,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 7,
+          "wr": 0.714,
+          "pnl": 14.26
+        },
+        "CHOP": {
+          "n": 20,
+          "wr": 0.55,
+          "pnl": 26.97
+        },
+        "COMPRESS": {
+          "n": 8,
+          "wr": 0.5,
+          "pnl": 3.97
+        }
+      },
+      "capital_final": 1045.19
+    },
+    {
+      "window": 69,
+      "train_start": "2023-08",
+      "test_start": "2024-02",
+      "n_trades": 55,
+      "n_train_samples": 2828,
+      "win_rate": 0.5636,
+      "profit_factor": 2.77,
+      "total_return": 0.0605,
+      "max_drawdown": -0.0039,
+      "sharpe": 32.942,
+      "auc_train": 0.629,
+      "base_wr": 0.327,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 10,
+          "wr": 0.7,
+          "pnl": 18.43
+        },
+        "CHOP": {
+          "n": 34,
+          "wr": 0.559,
+          "pnl": 36.26
+        },
+        "COMPRESS": {
+          "n": 11,
+          "wr": 0.455,
+          "pnl": 5.83
+        }
+      },
+      "capital_final": 1060.52
+    },
+    {
+      "window": 70,
+      "train_start": "2023-09",
+      "test_start": "2024-03",
+      "n_trades": 10,
+      "n_train_samples": 2812,
+      "win_rate": 0.4,
+      "profit_factor": 1.764,
+      "total_return": 0.0039,
+      "max_drawdown": -0.0022,
+      "sharpe": 17.649,
+      "auc_train": 0.617,
+      "base_wr": 0.367,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -0.59
+        },
+        "CHOP": {
+          "n": 7,
+          "wr": 0.571,
+          "pnl": 6.13
+        },
+        "COMPRESS": {
+          "n": 2,
+          "wr": 0.0,
+          "pnl": -1.65
+        }
+      },
+      "capital_final": 1003.89
+    },
+    {
+      "window": 71,
+      "train_start": "2023-10",
+      "test_start": "2024-04",
+      "n_trades": 10,
+      "n_train_samples": 2812,
+      "win_rate": 0.5,
+      "profit_factor": 1.644,
+      "total_return": 0.0053,
+      "max_drawdown": -0.0037,
+      "sharpe": 17.259,
+      "auc_train": 0.598,
+      "base_wr": 0.386,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 5,
+          "wr": 0.4,
+          "pnl": -0.33
+        },
+        "CHOP": {
+          "n": 5,
+          "wr": 0.6,
+          "pnl": 5.64
+        }
+      },
+      "capital_final": 1005.3
+    },
+    {
+      "window": 72,
+      "train_start": "2023-11",
+      "test_start": "2024-05",
+      "n_trades": 14,
+      "n_train_samples": 2812,
+      "win_rate": 0.5,
+      "profit_factor": 1.696,
+      "total_return": 0.0071,
+      "max_drawdown": -0.0038,
+      "sharpe": 18.246,
+      "auc_train": 0.586,
+      "base_wr": 0.381,
+      "by_regime": {
+        "TREND_UP": {
+          "n": 7,
+          "wr": 0.429,
+          "pnl": 0.48
+        },
+        "CHOP": {
+          "n": 5,
+          "wr": 0.6,
+          "pnl": 5.59
+        },
+        "COMPRESS": {
+          "n": 2,
+          "wr": 0.5,
+          "pnl": 1.03
+        }
+      },
+      "capital_final": 1007.1
+    },
+    {
+      "window": 73,
+      "train_start": "2023-12",
+      "test_start": "2024-06",
+      "n_trades": 1,
+      "n_train_samples": 2812,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "total_return": -0.0006,
+      "max_drawdown": -0.0006,
+      "sharpe": 0.0,
+      "auc_train": 0.583,
+      "base_wr": 0.376,
+      "by_regime": {
+        "COMPRESS": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -0.57
+        }
+      },
+      "capital_final": 999.43
+    },
+    {
+      "window": 74,
+      "train_start": "2024-01",
+      "test_start": "2024-07",
+      "n_trades": 6,
+      "n_train_samples": 2812,
+      "win_rate": 0.8333,
+      "profit_factor": 13.326,
+      "total_return": 0.0145,
+      "max_drawdown": -0.0012,
+      "sharpe": 0.0,
+      "auc_train": 0.58,
+      "base_wr": 0.372,
+      "by_regime": {
+        "CHOP": {
+          "n": 5,
+          "wr": 0.8,
+          "pnl": 12.41
+        },
+        "COMPRESS": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 2.09
+        }
+      },
+      "capital_final": 1014.5
+    },
+    {
+      "window": 75,
+      "train_start": "2024-02",
+      "test_start": "2024-08",
+      "n_trades": 0,
+      "n_train_samples": 2812,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.575,
+      "base_wr": 0.38,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 76,
+      "train_start": "2024-03",
+      "test_start": "2024-09",
+      "n_trades": 0,
+      "n_train_samples": 2812,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.585,
+      "base_wr": 0.367,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 77,
+      "train_start": "2024-04",
+      "test_start": "2024-10",
+      "n_trades": 17,
+      "n_train_samples": 2812,
+      "win_rate": 0.4706,
+      "profit_factor": 1.478,
+      "total_return": 0.0061,
+      "max_drawdown": -0.0077,
+      "sharpe": 14.193,
+      "auc_train": 0.601,
+      "base_wr": 0.354,
+      "by_regime": {
+        "CHOP": {
+          "n": 14,
+          "wr": 0.5,
+          "pnl": 6.6
+        },
+        "COMPRESS": {
+          "n": 3,
+          "wr": 0.333,
+          "pnl": -0.49
+        }
+      },
+      "capital_final": 1006.11
+    },
+    {
+      "window": 78,
+      "train_start": "2024-05",
+      "test_start": "2024-11",
+      "n_trades": 10,
+      "n_train_samples": 2812,
+      "win_rate": 0.6,
+      "profit_factor": 2.532,
+      "total_return": 0.0083,
+      "max_drawdown": -0.0024,
+      "sharpe": 33.362,
+      "auc_train": 0.6,
+      "base_wr": 0.356,
+      "by_regime": {
+        "CHOP": {
+          "n": 10,
+          "wr": 0.6,
+          "pnl": 8.3
+        }
+      },
+      "capital_final": 1008.3
+    },
+    {
+      "window": 79,
+      "train_start": "2024-06",
+      "test_start": "2024-12",
+      "n_trades": 11,
+      "n_train_samples": 2812,
+      "win_rate": 0.0909,
+      "profit_factor": 0.157,
+      "total_return": -0.0153,
+      "max_drawdown": -0.0166,
+      "sharpe": -75.059,
+      "auc_train": 0.601,
+      "base_wr": 0.375,
+      "by_regime": {
+        "CHOP": {
+          "n": 6,
+          "wr": 0.0,
+          "pnl": -11.48
+        },
+        "COMPRESS": {
+          "n": 5,
+          "wr": 0.2,
+          "pnl": -3.85
+        }
+      },
+      "capital_final": 984.68
+    },
+    {
+      "window": 80,
+      "train_start": "2024-07",
+      "test_start": "2025-01",
+      "n_trades": 9,
+      "n_train_samples": 2812,
+      "win_rate": 0.3333,
+      "profit_factor": 0.818,
+      "total_return": -0.0019,
+      "max_drawdown": -0.0073,
+      "sharpe": 0.0,
+      "auc_train": 0.588,
+      "base_wr": 0.377,
+      "by_regime": {
+        "CHOP": {
+          "n": 6,
+          "wr": 0.5,
+          "pnl": 2.77
+        },
+        "COMPRESS": {
+          "n": 3,
+          "wr": 0.0,
+          "pnl": -4.67
+        }
+      },
+      "capital_final": 998.09
+    },
+    {
+      "window": 81,
+      "train_start": "2024-08",
+      "test_start": "2025-02",
+      "n_trades": 7,
+      "n_train_samples": 2812,
+      "win_rate": 0.7143,
+      "profit_factor": 5.221,
+      "total_return": 0.0115,
+      "max_drawdown": -0.0014,
+      "sharpe": 0.0,
+      "auc_train": 0.593,
+      "base_wr": 0.379,
+      "by_regime": {
+        "CHOP": {
+          "n": 5,
+          "wr": 0.8,
+          "pnl": 10.06
+        },
+        "COMPRESS": {
+          "n": 2,
+          "wr": 0.5,
+          "pnl": 1.44
+        }
+      },
+      "capital_final": 1011.5
+    },
+    {
+      "window": 82,
+      "train_start": "2024-09",
+      "test_start": "2025-03",
+      "n_trades": 1,
+      "n_train_samples": 2812,
+      "win_rate": 1.0,
+      "profit_factor": 2409800.0,
+      "total_return": 0.0024,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.585,
+      "base_wr": 0.381,
+      "by_regime": {
+        "COMPRESS": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 2.41
+        }
+      },
+      "capital_final": 1002.41
+    },
+    {
+      "window": 83,
+      "train_start": "2024-10",
+      "test_start": "2025-04",
+      "n_trades": 4,
+      "n_train_samples": 2812,
+      "win_rate": 0.25,
+      "profit_factor": 0.607,
+      "total_return": -0.0013,
+      "max_drawdown": -0.0021,
+      "sharpe": 0.0,
+      "auc_train": 0.585,
+      "base_wr": 0.388,
+      "by_regime": {
+        "COMPRESS": {
+          "n": 4,
+          "wr": 0.25,
+          "pnl": -1.25
+        }
+      },
+      "capital_final": 998.75
+    },
+    {
+      "window": 84,
+      "train_start": "2024-11",
+      "test_start": "2025-05",
+      "n_trades": 6,
+      "n_train_samples": 2812,
+      "win_rate": 0.5,
+      "profit_factor": 2.015,
+      "total_return": 0.0032,
+      "max_drawdown": -0.0031,
+      "sharpe": 0.0,
+      "auc_train": 0.589,
+      "base_wr": 0.396,
+      "by_regime": {
+        "CHOP": {
+          "n": 1,
+          "wr": 1.0,
+          "pnl": 2.59
+        },
+        "COMPRESS": {
+          "n": 5,
+          "wr": 0.4,
+          "pnl": 0.6
+        }
+      },
+      "capital_final": 1003.19
+    },
+    {
+      "window": 85,
+      "train_start": "2024-12",
+      "test_start": "2025-06",
+      "n_trades": 0,
+      "n_train_samples": 2812,
+      "win_rate": 0,
+      "profit_factor": 0.0,
+      "total_return": 0.0,
+      "max_drawdown": 0.0,
+      "sharpe": 0.0,
+      "auc_train": 0.589,
+      "base_wr": 0.385,
+      "by_regime": {},
+      "capital_final": 1000.0
+    },
+    {
+      "window": 86,
+      "train_start": "2025-01",
+      "test_start": "2025-07",
+      "n_trades": 4,
+      "n_train_samples": 2812,
+      "win_rate": 0.5,
+      "profit_factor": 1.993,
+      "total_return": 0.0027,
+      "max_drawdown": -0.0028,
+      "sharpe": 0.0,
+      "auc_train": 0.593,
+      "base_wr": 0.382,
+      "by_regime": {
+        "CHOP": {
+          "n": 4,
+          "wr": 0.5,
+          "pnl": 2.73
+        }
+      },
+      "capital_final": 1002.73
+    },
+    {
+      "window": 87,
+      "train_start": "2025-02",
+      "test_start": "2025-08",
+      "n_trades": 4,
+      "n_train_samples": 2812,
+      "win_rate": 0.5,
+      "profit_factor": 1.946,
+      "total_return": 0.0028,
+      "max_drawdown": -0.0029,
+      "sharpe": 0.0,
+      "auc_train": 0.591,
+      "base_wr": 0.38,
+      "by_regime": {
+        "CHOP": {
+          "n": 4,
+          "wr": 0.5,
+          "pnl": 2.77
+        }
+      },
+      "capital_final": 1002.77
+    },
+    {
+      "window": 88,
+      "train_start": "2025-03",
+      "test_start": "2025-09",
+      "n_trades": 1,
+      "n_train_samples": 2812,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "total_return": -0.001,
+      "max_drawdown": -0.001,
+      "sharpe": 0.0,
+      "auc_train": 0.59,
+      "base_wr": 0.381,
+      "by_regime": {
+        "CHOP": {
+          "n": 1,
+          "wr": 0.0,
+          "pnl": -0.99
+        }
+      },
+      "capital_final": 999.01
+    }
+  ],
+  "oos": {
+    "window": "OOS",
+    "train_start": "2018-01",
+    "test_start": "2025-11",
+    "n_trades": 0,
+    "n_train_samples": 62116,
+    "win_rate": 0,
+    "profit_factor": 0.0,
+    "total_return": 0.0,
+    "max_drawdown": 0.0,
+    "sharpe": 0.0,
+    "auc_train": 0.573,
+    "base_wr": 0.387,
+    "by_regime": {},
+    "capital_final": 1000.0,
+    "oos_start": "2025-11-13",
+    "oos_end": "2026-05-12"
+  },
+  "benchmark": {
+    "bh_return": -0.1834,
+    "bh_pct": -18.34
+  }
+}
