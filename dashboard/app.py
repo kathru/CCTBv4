@@ -1393,8 +1393,8 @@ async def trading_loop():
         # Drawdown intraday: menor portfolio hoje vs máximo hoje
         _today_hist = [h for h in state.get("history", []) if h.get("ts", 0) > _today_start_ts]
         if _today_hist:
-            _peak_today = max(h["v"] for h in _today_hist)
-            _curr_today = _today_hist[-1]["v"] if _today_hist else _port_val
+            _peak_today = max(h.get("total", h.get("v", 0)) for h in _today_hist)
+            _curr_today = _today_hist[-1].get("total", _today_hist[-1].get("v", _port_val))
             state["drawdown_intraday"] = round((_curr_today - _peak_today) / _peak_today * 100, 2) if _peak_today > 0 else 0.0
         # Blocked log
         state["blocked_log"]      = _blocked_log[:20]
