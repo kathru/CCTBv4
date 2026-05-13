@@ -827,6 +827,41 @@ async def reset_portfolio(token: str = "", brl: float = 0.0):
     return summary
 
 
+@app.get("/api/report")
+async def get_report():
+    """
+    Retorna o relatório de validação mais recente disponível.
+    Prioridade: validate_v4_result.json > validation_result.json > vazio.
+    """
+    _base = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "historical")
+    for fname in ["validation_v4_result.json", "validation_result.json"]:
+        path = os.path.join(_base, fname)
+        if os.path.exists(path):
+            try:
+                with open(path) as f:
+                    data = json.load(f)
+                # Limpa trades individuais para não sobrecarregar o JSON (podem ser grandes)
+                for w in data.get("windows", []):
+                    if "trades" in w and len(w["trades"]) > 50:
+                        w["trades"] = w["trades"][:50]
+                data["_source"] = fname
+                data["_available"] = True
+                return data
+            except Exception as e:
+                logger.warning(f"[Report] Erro ao ler {fname}: {e}")
+    return {"_available": False, "windows": [], "oos": {}, "benchmarks": {}}
+
+
+@app.get("/api/calibration")
+async def get_calibration():
+    """Retorna coeficientes de calibração do Signal Score (Platt Scaling)."""
+    path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "calibration_coef.json")
+    if os.path.exists(path):
+        with open(path) as f:
+            return json.load(f)
+    return {"_available": False}
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
