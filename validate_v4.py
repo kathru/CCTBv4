@@ -46,7 +46,7 @@ PAIRS_HIST  = ["BTC-USDT", "ETH-USDT", "SOL-USDT"]
 PAIRS_RT    = ["BTC-USD",  "ETH-USD",  "SOL-USD"]   # formato do runtime
 PAIR_MAP    = dict(zip(PAIRS_HIST, PAIRS_RT))
 
-INITIAL_CAPITAL = 1000.0
+INITIAL_CAPITAL = 1020.0
 TRAIN_MONTHS    = 6
 TEST_MONTHS     = 2
 STEP_MONTHS     = 1
@@ -238,8 +238,9 @@ def simulate_window(
                 continue
 
             ctx_6h     = resample_6h(ctx_candles)[-50:]
-            closes_map = {p: [c["close"] for c in candles_map.get(p, []) if c["ts"] <= ts_now][-300:]
-                          for p in PAIRS_HIST}
+            # Prepara closes_map com nomes RT para o Signal Engine (Relative Strength)
+            closes_map_rt = {PAIR_MAP[ph]: [c["close"] for c in candles_map[ph] if c["ts"] <= ts_now][-300:]
+                             for ph in PAIRS_HIST}
 
             # Override market_context via monkey-patch
             import data.market_data as _md
@@ -257,7 +258,7 @@ def simulate_window(
                     pair         = pair_rt,
                     candles_1h   = ctx_candles,
                     candles_6h   = ctx_6h,
-                    closes_map   = {pair_rt: [c["close"] for c in ctx_candles]},
+                    closes_map   = closes_map_rt,
                     engine       = engine,
                     open_slots   = slots,
                     existing_slot= existing_slot if has_position else None,

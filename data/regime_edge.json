@@ -1,0 +1,44 @@
+{
+  "TREND_EXPANSION": {
+    "n": 169,
+    "win_rate": 0.5089,
+    "ev": 1.0147,
+    "has_edge": true,
+    "reason": "edge positivo"
+  },
+  "MEAN_REVERTING_CHOP": {
+    "n": 409,
+    "win_rate": 0.4963,
+    "ev": 0.9645,
+    "has_edge": true,
+    "reason": "edge positivo"
+  },
+  "VOLATILITY_COMPRESSION": {
+    "n": 222,
+    "win_rate": 0.4775,
+    "ev": 0.8891,
+    "has_edge": true,
+    "reason": "edge positivo"
+  },
+  "PANIC_LIQUIDATION": {
+    "n": 0,
+    "win_rate": 0.0,
+    "ev": -1.0,
+    "has_edge": false,
+    "reason": "regime de risco \u2014 bloqueado"
+  },
+  "LIQUIDITY_VACUUM": {
+    "n": 0,
+    "win_rate": 0.0,
+    "ev": -1.0,
+    "has_edge": false,
+    "reason": "regime de risco \u2014 bloqueado"
+  },
+  "HIGH_CORRELATION_RISK": {
+    "n": 0,
+    "win_rate": 0.0,
+    "ev": -1.0,
+    "has_edge": false,
+    "reason": "regime de risco \u2014 bloqueado"
+  }
+}
