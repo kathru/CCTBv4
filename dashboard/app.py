@@ -255,7 +255,7 @@ _trading_client = None
 if _okx_key and _okx_sec and _okx_pass:
     try:
         _trading_client = OKXTradingClient(_okx_key, _okx_sec, _okx_pass)
-        logger.info("[STARTUP] OKXTradingClient iniciado — precisão real de instrumentos ativa")
+        print("[STARTUP] OKXTradingClient iniciado — precisão real de instrumentos ativa")
     except Exception as _e:
         logger.warning(f"[STARTUP] OKXTradingClient não iniciado: {_e}")
 
