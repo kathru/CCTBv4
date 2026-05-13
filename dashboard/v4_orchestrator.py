@@ -283,31 +283,34 @@ class V4Orchestrator:
         )
 
         # ── Decisão final ─────────────────────────────────────────────────────
-        # Thresholds baseados na calibração Platt (28k amostras OKX 8 anos):
-        # WR por regime walk-forward: TREND_UP=50.9%, COMPRESS=47.7%, CHOP=49.6%
-        # O score tem baixo poder discriminativo (28-32% WR entre todos os buckets),
-        # portanto o REGIME é o filtro primário; score é filtro secundário leve.
+        # IMPORTANTE: thresholds em score_RAW (pré-Platt), não calibrado.
+        # Após Platt Scaling, score_calibrado fica em 0.241–0.326 para qualquer input.
+        # Comparar threshold 0.52 com score_calibrado 0.29 é impossível de atingir.
+        # Solução: usar score_raw para filtro de entrada; score calibrado para EV/Kelly.
         #
-        # TREND_EXPANSION:       regime mais favorável — threshold baixo (aceita mais entradas)
-        # VOLATILITY_COMPRESSION:potencial de expansão — threshold médio
-        # MEAN_REVERTING_CHOP:   WR próximo de random — threshold alto (muito seletivo)
-        # Outros regimes (PANIC, LIQUIDITY_VACUUM, etc.): bloqueados pela thesis_invalidation
-        min_score = {
-            "TREND_EXPANSION":        0.52,   # WR=50.9% no WF — mais agressivo
-            "TREND_EXHAUSTION":       0.60,   # tendência madura — conservador
-            "VOLATILITY_COMPRESSION": 0.56,   # pré-expansão — moderado
-            "MEAN_REVERTING_CHOP":    0.65,   # WR~random — muito seletivo
-            "HIGH_CORRELATION_RISK":  0.68,   # risco sistêmico — raramente entra
-            "PANIC_LIQUIDATION":      0.99,   # bloqueado (thesis_invalidation cuida da saída)
-            "LIQUIDITY_VACUUM":       0.99,   # bloqueado
-        }.get(regime, 0.60)
+        # Thresholds em escala raw (0.0–1.0):
+        #   TREND_EXPANSION:       0.52 raw  (mais agressivo — WR=50.9% no WF)
+        #   VOLATILITY_COMPRESSION:0.56 raw  (moderado)
+        #   MEAN_REVERTING_CHOP:   0.60 raw  (mais seletivo — WR~random)
+        #   Outros:                0.62 raw  (conservador)
+        score_for_threshold = signal.get("score_raw", signal["score"])
 
-        if signal["score"] < min_score:
+        min_score = {
+            "TREND_EXPANSION":        0.52,
+            "TREND_EXHAUSTION":       0.60,
+            "VOLATILITY_COMPRESSION": 0.56,
+            "MEAN_REVERTING_CHOP":    0.60,
+            "HIGH_CORRELATION_RISK":  0.68,
+            "PANIC_LIQUIDATION":      0.99,
+            "LIQUIDITY_VACUUM":       0.99,
+        }.get(regime, 0.62)
+
+        if score_for_threshold < min_score:
             return {
                 "decision": "HOLD",
                 "score":    signal["score"],
                 "size_pct": 0.0,
-                "reason":   f"Score {signal['score']:.3f} < min {min_score:.2f}",
+                "reason":   f"Score_raw {score_for_threshold:.3f} < min {min_score:.2f} (cal={signal['score']:.3f})",
                 "regime":   regime_result,
                 "signal":   signal,
                 "context":  market_ctx,
