@@ -879,17 +879,32 @@ def get_full_version():
         major_strategy = "4.0"
 
     # Calcular BUILD = total de commits
-    try:
-        result = subprocess.run(
-            ["git", "rev-list", "--all", "--count"],
-            cwd=os.path.dirname(os.path.dirname(__file__)),
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        build = result.stdout.strip()
-    except:
-        build = "0"
+    # Tenta múltiplos caminhos do git (Windows + Linux)
+    repo_dir = os.path.dirname(os.path.dirname(__file__))
+    git_candidates = ["git"]
+    if os.name == "nt":
+        git_candidates += [
+            r"C:\Program Files\Git\cmd\git.exe",
+            r"C:\Program Files\Git\bin\git.exe",
+            r"C:\Program Files (x86)\Git\cmd\git.exe",
+        ]
+    build = "0"
+    for git_cmd in git_candidates:
+        try:
+            result = subprocess.run(
+                [git_cmd, "rev-list", "--all", "--count"],
+                cwd=repo_dir,
+                capture_output=True,
+                text=True,
+                timeout=5,
+                shell=False
+            )
+            val = result.stdout.strip()
+            if val.isdigit():
+                build = val
+                break
+        except Exception:
+            continue
 
     return f"v{major_strategy}.{build}"
 
