@@ -608,7 +608,7 @@ state = {
     "portfolio": {
         "usd":                 round(engine.balance_usd, 2),
         "total_usd":           round(engine.portfolio_value(), 2),
-        "total_brl":           round(engine.portfolio_value() * _startup_usd_brl, 2),
+        "total_brl":           round(engine.portfolio_value() * _fetch_usd_brl(), 2),
         "pnl_usd":             0.0,
         "pnl_brl":             0.0,
         "pnl_pct":             0.0,
