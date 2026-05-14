@@ -1016,16 +1016,16 @@
       const lEl = document.getElementById('pnl-losses');
       if (wEl) wEl.textContent = 'R$ ' + fmtBRL(grossWins   * usdBrl);
       if (lEl) lEl.textContent = 'R$ ' + fmtBRL(grossLosses * usdBrl);
-      // P&L principal = ganhos - perdas - taxas
-      const netBRL = netPnl * usdBrl;
-      const netPct = (s.portfolio?.initial_brl || 0) > 0
-        ? netBRL / (s.portfolio?.initial_brl || 1) * 100 : 0;
+      // P&L principal = ganhos - perdas - taxas (realizado)
+      const netBRL  = netPnl * usdBrl;
+      const initBRL2 = s.portfolio?.initial_balance_brl || initBRL || 5000;
+      const netPct  = initBRL2 > 0 ? (netBRL / initBRL2) * 100 : 0;
       if (pnlEl) {
         pnlEl.textContent = (netBRL >= 0 ? '+' : '-') + 'R$ ' + fmtBRL(Math.abs(netBRL));
         pnlEl.className = 'text-lg font-bold leading-tight ' + (netBRL >= 0 ? 'text-green-400' : 'text-red-400');
       }
       const pctEl = document.getElementById('pnl-pct');
-      if (pctEl && kpis.sell_trades > 0) {
+      if (pctEl) {
         pctEl.textContent = (netPct >= 0 ? '+' : '') + netPct.toFixed(2) + '%';
         pctEl.className = 'text-[10px] mt-0.5 ' + (netPct >= 0 ? 'text-green-500' : 'text-red-500');
       }
