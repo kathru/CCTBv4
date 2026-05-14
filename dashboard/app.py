@@ -879,15 +879,22 @@ def get_full_version():
         major_strategy = "4.0"
 
     # Calcular BUILD = total de commits
-    # Tenta múltiplos caminhos do git (Windows + Linux)
+    import shutil
     repo_dir = os.path.dirname(os.path.dirname(__file__))
-    git_candidates = ["git"]
+    # Resolve caminho absoluto do git (shutil.which funciona mesmo com PATH restrito)
+    git_candidates = []
+    found = shutil.which("git")
+    if found:
+        git_candidates.append(found)
+    # Fallbacks explícitos para Windows (processo filho pode ter PATH reduzido)
     if os.name == "nt":
         git_candidates += [
+            r"C:\Program Files\Git\mingw64\bin\git.exe",
             r"C:\Program Files\Git\cmd\git.exe",
             r"C:\Program Files\Git\bin\git.exe",
             r"C:\Program Files (x86)\Git\cmd\git.exe",
         ]
+    git_candidates.append("git")  # último recurso
     build = "0"
     for git_cmd in git_candidates:
         try:
