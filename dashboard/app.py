@@ -260,15 +260,20 @@ if _okx_key and _okx_sec and _okx_pass:
     except Exception as _e:
         logger.warning(f"[STARTUP] OKXTradingClient não iniciado: {_e}")
 
-# Converte capital inicial de BRL para USD na taxa atual de mercado.
-_startup_usd_brl = _fetch_usd_brl()
-_initial_usd     = round(TOTAL_BRL_INITIAL / _startup_usd_brl, 2)
+# Engine carrega initial_balance do engine_state.json (gravado no reset).
+# NÃO recalculamos com a taxa atual — initial_balance é congelado no reset.
+# Passamos 0 para que _load_state() sempre prevaleça sobre o construtor.
 engine = SimulatedExecutionEngine(
-    initial_balance_usd=_initial_usd,
+    initial_balance_usd=0.0,          # será sobrescrito por _load_state()
     default_order_mode="adaptive",
     default_spread_pct=0.0002,
     trading_client=_trading_client,   # injeta precisão real de instrumentos OKX
 )
+# Proteção: se initial_balance ficou 0 (state não existe), usa R$5000 @ taxa atual
+if engine.initial_balance < 10:
+    _startup_usd_brl = _fetch_usd_brl()
+    engine.initial_balance = round(TOTAL_BRL_INITIAL / _startup_usd_brl, 2)
+    engine.balance_usd     = engine.initial_balance
 
 # Cache de spreads reais por par (bid/ask do último ticker)
 _last_spreads: dict[str, float] = {p: 0.0002 for p in ["BTC-USD", "ETH-USD", "SOL-USD"]}
