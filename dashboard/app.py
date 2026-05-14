@@ -260,8 +260,11 @@ if _okx_key and _okx_sec and _okx_pass:
     except Exception as _e:
         logger.warning(f"[STARTUP] OKXTradingClient não iniciado: {_e}")
 
+# Taxa USD/BRL de startup — usada apenas para display inicial e fallback de primeiro run.
+# NÃO é usada para recalcular initial_balance (congelado no reset).
+_startup_usd_brl = _fetch_usd_brl()
+
 # Engine carrega initial_balance do engine_state.json (gravado no reset).
-# NÃO recalculamos com a taxa atual — initial_balance é congelado no reset.
 # Passamos 0 para que _load_state() sempre prevaleça sobre o construtor.
 engine = SimulatedExecutionEngine(
     initial_balance_usd=0.0,          # será sobrescrito por _load_state()
@@ -269,9 +272,8 @@ engine = SimulatedExecutionEngine(
     default_spread_pct=0.0002,
     trading_client=_trading_client,   # injeta precisão real de instrumentos OKX
 )
-# Proteção: se initial_balance ficou 0 (state não existe), usa R$5000 @ taxa atual
+# Proteção: se initial_balance ficou 0 (state não existe = primeiro run), inicializa
 if engine.initial_balance < 10:
-    _startup_usd_brl = _fetch_usd_brl()
     engine.initial_balance = round(TOTAL_BRL_INITIAL / _startup_usd_brl, 2)
     engine.balance_usd     = engine.initial_balance
 
