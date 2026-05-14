@@ -176,36 +176,18 @@
     <!-- ── Filtros Ativos + Market Breadth ── -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
     <div class="lg:col-span-2 card p-5">
-      <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center mb-3">
         <h3 class="font-semibold text-white">Motor Probabilístico</h3>
-        <div id="regime-banner" class="rounded-lg px-3 py-1.5 mode-chop">
-          <span id="regime-banner-text" class="text-xs font-bold">↔ CHOP — Operação Conservadora</span>
-        </div>
       </div>
       <!-- V4 Engine Panel -->
       <div class="mb-4 rounded-xl border border-indigo-500/20 bg-gray-900/70 overflow-hidden">
 
-        <!-- Win Rate destaque — estilo Market Breadth -->
-        <div class="flex flex-col items-center px-4 pt-4 pb-3 border-b border-gray-800">
-          <div class="relative w-full h-3 bg-gray-800 rounded-full overflow-hidden mb-2">
-            <div id="v4-winrate-gauge" class="absolute inset-y-0 left-0 rounded-full transition-all duration-700 bg-gray-600" style="width:0%"></div>
-            <div class="absolute inset-y-0 bg-yellow-500/60" style="left:55%;width:1px"></div>
-          </div>
+        <!-- Regime Banner — topo do painel -->
+        <div id="regime-banner" class="px-4 py-3 border-b border-gray-800 mode-chop flex items-center justify-between">
+          <span id="regime-banner-text" class="text-sm font-bold">↔ CHOP — Operação Conservadora</span>
           <div class="flex items-center gap-2">
-            <div class="flex items-baseline gap-1.5">
-              <span id="v4-winrate-big" class="text-3xl font-bold font-mono text-white">—</span>
-              <span class="text-xs text-gray-500">win rate 7d</span>
-            </div>
-            <div class="flex flex-col items-center ml-2">
-              <span class="text-[8px] text-gray-600 uppercase tracking-wider mb-0.5">Risk Engine</span>
-              <span id="v4-risk-action" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-gray-700 text-gray-300">normal</span>
-            </div>
-          </div>
-          <p class="text-[9px] text-gray-600 mt-0.5">linha amarela = meta (55%)</p>
-          <div class="flex items-center gap-1.5 mt-1">
-            <span class="text-[8px] text-gray-600">Prior:</span>
-            <span id="prior-source-badge" class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-gray-700 text-gray-400">default</span>
-            <span id="prior-weight-badge" class="text-[8px] text-gray-600"></span>
+            <span class="text-[8px] text-gray-600 uppercase tracking-wider">Risk Engine</span>
+            <span id="v4-risk-action" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-gray-700/60 text-gray-300">normal</span>
           </div>
         </div>
 
@@ -1440,9 +1422,6 @@
       setVal('v4-winrate',     v != null ? pct.toFixed(0)+'%' : '—', c);
       setBar('v4-winrate-bar', pct, c);
       setCtx('v4-winrate-ctx', ctx);
-      // destaque topo (gauge + número grande)
-      setVal('v4-winrate-big', v != null ? pct.toFixed(0)+'%' : '—', c);
-      setBar('v4-winrate-gauge', pct, c);
     }
 
     // V4 per-pair scores
@@ -1832,11 +1811,11 @@
         if (hdrIcon)  hdrIcon.textContent  = marketModeIcon(mm);
         if (hdrLabel) hdrLabel.textContent = mm.toUpperCase();
       }
-      // Regime banner above filters table
+      // Regime banner — topo do painel Motor Probabilístico
       const banner = el('regime-banner');
       const bannerText = el('regime-banner-text');
       if (banner) {
-        banner.className = `rounded-lg px-4 py-2.5 mb-3 flex items-center justify-between ${marketModeCls(mm)}`;
+        banner.className = `px-4 py-3 border-b border-gray-800 flex items-center justify-between ${marketModeCls(mm)}`;
         if (bannerText) bannerText.textContent = `${marketModeIcon(mm)} ${marketModeDesc(mm)}`;
       }
 
