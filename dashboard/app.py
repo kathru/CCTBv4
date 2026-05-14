@@ -831,26 +831,63 @@ async def reset_portfolio(token: str = "", brl: float = 0.0):
 @app.get("/api/report")
 async def get_report():
     """
-    Retorna o relatório de validação mais recente disponível.
-    Prioridade: validate_v4_result.json > validation_result.json > vazio.
+    Retorna relatório de validação para o dashboard.
+    Estrutura esperada: { oos: {...}, windows: [...], benchmarks: {...} }
+
+    Prioridade OOS  : validation_v4_15m_result.json (15M, casado com ciclo do bot)
+                    → validation_v4_result.json (1D)
+    Walk-forward    : validation_result.json (janelas históricas)
     """
-    _base = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "historical")
-    for fname in ["validation_v4_result.json", "validation_result.json"]:
-        path = os.path.join(_base, fname)
-        if os.path.exists(path):
+    _base    = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "historical")
+    _data    = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+    result   = {"_available": False, "windows": [], "oos": {}, "benchmarks": {}}
+
+    # ── 1. OOS: preferir resultado 15M ───────────────────────────────────────
+    for fname in ["validation_v4_15m_result.json", "validation_v4_result.json"]:
+        for base in [_base, _data]:
+            path = os.path.join(base, fname)
+            if not os.path.exists(path):
+                continue
             try:
                 with open(path) as f:
-                    data = json.load(f)
-                # Limpa trades individuais para não sobrecarregar o JSON (podem ser grandes)
-                for w in data.get("windows", []):
-                    if "trades" in w and len(w["trades"]) > 50:
-                        w["trades"] = w["trades"][:50]
-                data["_source"] = fname
-                data["_available"] = True
-                return data
+                    v4 = json.load(f)
+                # validation_v4_15m_result.json tem dados no root; normalizar para "oos"
+                oos = v4.get("oos") or v4
+                if oos.get("n_trades", 0) > 0:
+                    result["oos"]        = oos
+                    result["benchmarks"] = v4.get("benchmarks", oos.get("benchmarks", {}))
+                    result["_source"]    = fname
+                    result["_available"] = True
+                    break
             except Exception as e:
                 logger.warning(f"[Report] Erro ao ler {fname}: {e}")
-    return {"_available": False, "windows": [], "oos": {}, "benchmarks": {}}
+        if result["_available"]:
+            break
+
+    # ── 2. Walk-forward: validation_result.json (janelas históricas) ─────────
+    for fname in ["validation_result.json", "validation_v4_result.json"]:
+        for base in [_base, _data]:
+            path = os.path.join(base, fname)
+            if not os.path.exists(path):
+                continue
+            try:
+                with open(path) as f:
+                    wf = json.load(f)
+                windows = wf.get("windows", [])
+                if windows:
+                    # Limita trades por janela para não sobrecarregar o payload
+                    for w in windows:
+                        if "trades" in w and len(w["trades"]) > 50:
+                            w["trades"] = w["trades"][:50]
+                    result["windows"] = windows
+                    result["_available"] = True
+                    break
+            except Exception as e:
+                logger.warning(f"[Report] Erro ao ler WF {fname}: {e}")
+        if result.get("windows"):
+            break
+
+    return result
 
 
 @app.get("/api/calibration")
