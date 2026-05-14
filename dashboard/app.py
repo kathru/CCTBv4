@@ -1173,6 +1173,7 @@ async def trading_loop():
                 _breadth_score = _breadth.score if _breadth else 1.0
                 try:
                     import functools as _ft
+                    _port_dd = state.get("drawdown_intraday", 0.0)
                     _v4_decision = await asyncio.wait_for(
                         loop.run_in_executor(None, _ft.partial(
                             v4.evaluate,
@@ -1180,6 +1181,7 @@ async def trading_loop():
                             engine, _v4_open_slots,
                             _v4_slot if _v4_slot.get("qty", 0) > 0 else None,
                             _breadth_score,
+                            _port_dd,
                         )),
                         timeout=12.0
                     )
@@ -1307,6 +1309,7 @@ async def trading_loop():
                         score=_v4_score, regime=_v4_regime,
                     ):
                         strategy_slots[_v4_key] = _empty_slot()
+                        v4.notify_close(pair)   # registra cooldown por par
                         _record_trade("SELL", pair, _v4_qty, price, _v4_sell_usd, _exit_label,
                                       score=_v4_score,
                                       reason=_v4_decision.get("reason", ""),

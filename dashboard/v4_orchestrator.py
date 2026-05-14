@@ -76,6 +76,27 @@ class V4Orchestrator:
     Mantém estado entre ciclos (meta-layer, portfolio history, risk state).
     """
 
+    # ── Gates de proteção contra over-trading ────────────────────────────────
+    # CHOP: só entra com score muito alto (maioria do tempo em bear = chop)
+    # EV mínimo: deve superar 3× custo de round-trip para justificar entrada
+    # DD gate: para novas entradas quando portfólio caiu > 10% no dia
+    # Cooldown: aguarda 2 ciclos (30min) por par após fechar trade
+
+    SCORE_THRESHOLDS = {
+        "TREND_EXPANSION":        0.56,   # mais agressivo mas ainda seletivo
+        "TREND_EXHAUSTION":       0.68,   # quase nunca entra — tendência exausta
+        "VOLATILITY_COMPRESSION": 0.60,   # moderado
+        "MEAN_REVERTING_CHOP":    0.72,   # muito seletivo — WR~random sem tendência
+        "HIGH_CORRELATION_RISK":  0.75,   # praticamente bloqueado
+        "PANIC_LIQUIDATION":      0.99,   # bloqueado
+        "LIQUIDITY_VACUUM":       0.99,   # bloqueado
+    }
+    DEFAULT_SCORE_THRESHOLD = 0.65       # conservador para regimes desconhecidos
+
+    MIN_EV_MULT      = 3.0               # EV deve ser > N × fee round-trip
+    DD_GATE_PCT      = -10.0             # bloqueia novas entradas se DD% < -10%
+    COOLDOWN_CYCLES  = 2                 # ciclos de 15min após fechar trade por par
+
     def __init__(self, state_dir: str = "data"):
         self.state_dir       = state_dir
         self.meta_layer      = MetaLayer(os.path.join(state_dir, "meta_layer_state.json"))
@@ -83,8 +104,13 @@ class V4Orchestrator:
         self.risk_state: dict        = {"action": "normal", "sizing_mult": 1.0, "alerts": []}
         self._last_mc_run: float     = 0.0
         self._last_context: dict     = {}  # cache de contextos por par
+        self._last_close_ts: dict    = {}  # {pair: timestamp} — cooldown por par
 
     # ── Avaliação completa por par ────────────────────────────────────────────
+
+    def notify_close(self, pair: str):
+        """Registra fechamento de trade para cooldown."""
+        self._last_close_ts[pair] = time.time()
 
     def evaluate(
         self,
@@ -96,6 +122,7 @@ class V4Orchestrator:
         open_slots:    dict = None,
         existing_slot: dict = None,
         breadth_score: float = 1.0,  # market breadth 0–1 (vem do MarketBreadth engine)
+        portfolio_dd:  float = 0.0,  # drawdown intraday % (negativo = queda)
     ) -> dict:
         """
         Roda a pipeline V4 completa para um par.
@@ -188,13 +215,13 @@ class V4Orchestrator:
                 "latency_ms": int((time.time() - t0) * 1000),
             }
 
-        # ── Sem entrada se EV negativo ────────────────────────────────────────
-        if signal["expected_value"] <= 0 or signal["direction"] == "neutral":
+        # ── Direção neutra — sem trade ────────────────────────────────────────
+        if signal["direction"] == "neutral":
             return {
                 "decision": "HOLD",
                 "score":    signal["score"],
                 "size_pct": 0.0,
-                "reason":   f"EV={signal['expected_value']:.4f} | dir={signal['direction']}",
+                "reason":   f"dir=neutral ev={signal['expected_value']:.4f}",
                 "regime":   regime_result,
                 "signal":   signal,
                 "context":  market_ctx,
@@ -282,35 +309,66 @@ class V4Orchestrator:
             atr_value=atr,
         )
 
-        # ── Decisão final ─────────────────────────────────────────────────────
+        # ── Gate 1: Portfolio Drawdown ────────────────────────────────────────
+        # Bloqueia novas entradas se DD intraday < -10%
+        if portfolio_dd < self.DD_GATE_PCT:
+            return {
+                "decision": "HOLD",
+                "score":    signal["score"],
+                "size_pct": 0.0,
+                "reason":   f"DD_GATE: portfolio DD={portfolio_dd:.1f}% < {self.DD_GATE_PCT:.0f}%",
+                "regime":   regime_result,
+                "signal":   signal,
+                "context":  market_ctx,
+                "latency_ms": int((time.time() - t0) * 1000),
+            }
+
+        # ── Gate 2: Cooldown por par (2 ciclos = 30min após fechar trade) ─────
+        last_close = self._last_close_ts.get(pair, 0)
+        cooldown_secs = self.COOLDOWN_CYCLES * 15 * 60
+        secs_since = time.time() - last_close
+        if last_close > 0 and secs_since < cooldown_secs:
+            mins_left = int((cooldown_secs - secs_since) / 60) + 1
+            return {
+                "decision": "HOLD",
+                "score":    signal["score"],
+                "size_pct": 0.0,
+                "reason":   f"COOLDOWN: {mins_left}min restantes após fechar {pair}",
+                "regime":   regime_result,
+                "signal":   signal,
+                "context":  market_ctx,
+                "latency_ms": int((time.time() - t0) * 1000),
+            }
+
+        # ── Gate 3: Score mínimo por regime ──────────────────────────────────
         # IMPORTANTE: thresholds em score_RAW (pré-Platt), não calibrado.
         # Após Platt Scaling, score_calibrado fica em 0.241–0.326 para qualquer input.
-        # Comparar threshold 0.52 com score_calibrado 0.29 é impossível de atingir.
         # Solução: usar score_raw para filtro de entrada; score calibrado para EV/Kelly.
-        #
-        # Thresholds em escala raw (0.0–1.0):
-        #   TREND_EXPANSION:       0.52 raw  (mais agressivo — WR=50.9% no WF)
-        #   VOLATILITY_COMPRESSION:0.56 raw  (moderado)
-        #   MEAN_REVERTING_CHOP:   0.60 raw  (mais seletivo — WR~random)
-        #   Outros:                0.62 raw  (conservador)
         score_for_threshold = signal.get("score_raw", signal["score"])
-
-        min_score = {
-            "TREND_EXPANSION":        0.52,
-            "TREND_EXHAUSTION":       0.60,
-            "VOLATILITY_COMPRESSION": 0.56,
-            "MEAN_REVERTING_CHOP":    0.60,
-            "HIGH_CORRELATION_RISK":  0.68,
-            "PANIC_LIQUIDATION":      0.99,
-            "LIQUIDITY_VACUUM":       0.99,
-        }.get(regime, 0.62)
+        min_score = self.SCORE_THRESHOLDS.get(regime, self.DEFAULT_SCORE_THRESHOLD)
 
         if score_for_threshold < min_score:
             return {
                 "decision": "HOLD",
                 "score":    signal["score"],
                 "size_pct": 0.0,
-                "reason":   f"Score_raw {score_for_threshold:.3f} < min {min_score:.2f} (cal={signal['score']:.3f})",
+                "reason":   f"SCORE_GATE: raw={score_for_threshold:.3f} < {min_score:.2f} [{regime}]",
+                "regime":   regime_result,
+                "signal":   signal,
+                "context":  market_ctx,
+                "latency_ms": int((time.time() - t0) * 1000),
+            }
+
+        # ── Gate 4: EV mínimo > N × fee round-trip ───────────────────────────
+        # Com fees de 0.52% round-trip, EV precisa superar 3× = 1.56% para justificar
+        min_ev = self.MIN_EV_MULT * FEE.round_trip()
+        ev = signal.get("expected_value", 0.0)
+        if ev < min_ev:
+            return {
+                "decision": "HOLD",
+                "score":    signal["score"],
+                "size_pct": 0.0,
+                "reason":   f"EV_GATE: ev={ev:.4f} < min={min_ev:.4f} ({self.MIN_EV_MULT:.0f}× fee)",
                 "regime":   regime_result,
                 "signal":   signal,
                 "context":  market_ctx,
