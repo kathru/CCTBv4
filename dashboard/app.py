@@ -863,57 +863,59 @@ async def get_calibration():
     return {"_available": False}
 
 
-def get_full_version():
-    """
-    Retorna versão completa: vMAJOR.STRATEGY.BUILD
-    BUILD = total de commits do git
-    """
-    import subprocess
-
-    # Ler MAJOR.STRATEGY do arquivo VERSION
-    version_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "VERSION")
-    try:
-        with open(version_file) as f:
-            major_strategy = f.read().strip()
-    except:
-        major_strategy = "4.0"
-
-    # Calcular BUILD = total de commits
+def _compute_build_number() -> str:
+    """Calcula BUILD = total de commits git. Chamado uma vez no startup."""
+    repo_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     import shutil
-    repo_dir = os.path.dirname(os.path.dirname(__file__))
-    # Resolve caminho absoluto do git (shutil.which funciona mesmo com PATH restrito)
+
+    # Caminhos candidatos — shutil.which no startup tem PATH completo
     git_candidates = []
     found = shutil.which("git")
     if found:
         git_candidates.append(found)
-    # Fallbacks explícitos para Windows (processo filho pode ter PATH reduzido)
     if os.name == "nt":
-        git_candidates += [
+        for p in [
             r"C:\Program Files\Git\mingw64\bin\git.exe",
             r"C:\Program Files\Git\cmd\git.exe",
             r"C:\Program Files\Git\bin\git.exe",
             r"C:\Program Files (x86)\Git\cmd\git.exe",
-        ]
-    git_candidates.append("git")  # último recurso
-    build = "0"
+        ]:
+            if os.path.isfile(p):
+                git_candidates.append(p)
+    git_candidates.append("git")
+
     for git_cmd in git_candidates:
         try:
-            result = subprocess.run(
+            r = subprocess.run(
                 [git_cmd, "rev-list", "--all", "--count"],
-                cwd=repo_dir,
-                capture_output=True,
-                text=True,
-                timeout=5,
-                shell=False
+                cwd=repo_dir, capture_output=True, text=True, timeout=5
             )
-            val = result.stdout.strip()
+            val = r.stdout.strip()
             if val.isdigit():
-                build = val
-                break
+                return val
         except Exception:
             continue
+    return "0"
 
-    return f"v{major_strategy}.{build}"
+
+def _compute_major_strategy() -> str:
+    version_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "VERSION")
+    try:
+        with open(version_file) as f:
+            return f.read().strip()
+    except Exception:
+        return "4.0"
+
+
+# Calculado uma única vez no startup — evita problema de PATH reduzido em spawned processes
+_BUILD          = _compute_build_number()
+_MAJOR_STRATEGY = _compute_major_strategy()
+_FULL_VERSION   = f"v{_MAJOR_STRATEGY}.{_BUILD}"
+
+
+def get_full_version() -> str:
+    """Retorna versão completa: vMAJOR.STRATEGY.BUILD (pré-calculada no startup)."""
+    return _FULL_VERSION
 
 
 @app.get("/api/version")
