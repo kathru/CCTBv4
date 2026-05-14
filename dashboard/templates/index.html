@@ -306,20 +306,6 @@
         </div>
 
       </div>
-      <!-- Próximo evento — box com destaque -->
-      <div id="next-news-row" class="hidden mt-3 rounded-lg px-4 py-3 flex items-center justify-between bg-yellow-900/20 border border-yellow-500/30">
-        <div class="flex items-center gap-3">
-          <span class="text-yellow-400 text-xl">⏱</span>
-          <div>
-            <p class="text-[10px] text-yellow-600 uppercase tracking-wider font-semibold">Próximo evento econômico</p>
-            <p class="text-base font-bold text-yellow-300"><span id="next-news-name">—</span></p>
-          </div>
-        </div>
-        <div class="text-right">
-          <p class="text-2xl font-bold font-mono text-yellow-400"><span id="next-news-mins">—</span></p>
-        </div>
-      </div>
-
       <!-- Escala de score -->
       <div class="flex items-center gap-2 mt-3">
         <span class="score-blocked text-[9px] px-2 py-0.5 rounded font-semibold flex-1 text-center">&lt;55% HOLD</span>
@@ -339,8 +325,9 @@
       </div>
     </div>
 
-      <!-- Market Breadth — vertical -->
-      <div class="card p-5 flex flex-col">
+      <!-- Coluna direita: Market Breadth + Próximo Evento -->
+      <div class="flex flex-col gap-4">
+      <div class="card p-5 flex flex-col flex-1">
         <div class="flex items-center justify-between mb-4">
           <h3 class="font-semibold text-white">Market Breadth</h3>
           <span id="breadth-label" class="text-xs font-bold px-2.5 py-1 rounded bg-gray-700 text-gray-300">N/A</span>
@@ -392,6 +379,22 @@
           <span><span class="text-red-500">&lt;40%</span> compras bloqueadas</span>
         </div>
       </div>
+
+      <!-- Próximo evento econômico — painel independente -->
+      <div id="next-news-row" class="hidden card p-4 border border-yellow-500/20 bg-yellow-900/10">
+        <p class="text-[9px] text-yellow-600 uppercase tracking-wider font-semibold mb-3 flex items-center gap-1.5">
+          <span>⏱</span> Próximo evento econômico
+        </p>
+        <div class="flex items-end justify-between">
+          <p class="text-lg font-bold text-yellow-300 leading-tight"><span id="next-news-name">—</span></p>
+          <div class="text-right">
+            <p class="text-2xl font-bold font-mono text-yellow-400 leading-none"><span id="next-news-mins">—</span></p>
+            <p class="text-[9px] text-yellow-700 mt-0.5">até o evento</p>
+          </div>
+        </div>
+      </div>
+      </div><!-- /coluna direita -->
+
     </div>
 
     <!-- ── Histórico de Trades · Feed de Sinais ── -->
