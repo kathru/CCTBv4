@@ -513,16 +513,20 @@ def run(rerun_sensitivity=False, save_path=None):
                       "improvement_pct": round((1 - coef.get("brier_cal",1)/max(coef.get("brier_raw",1),1e-9))*100, 1)},
         }
 
-    # Lê resultado V4 se disponível (substitui OOS e benchmark)
-    v4_path = os.path.join(DATA_DIR, "validation_v4_result.json")
-    if os.path.exists(v4_path):
-        with open(v4_path) as f:
-            v4data = json.load(f)
-        # V4 OOS é mais fidedigno (usa o mesmo motor do runtime)
-        if v4data.get("oos"):
-            oos = v4data["oos"]
-        if v4data.get("benchmarks"):
-            benchmark = v4data["benchmarks"]
+    # Prioridade: 15M (casado com ciclo do bot) > 1D > walk-forward
+    for v4_fname in ["validation_v4_15m_result.json", "validation_v4_result.json"]:
+        v4_path = os.path.join(DATA_DIR, "historical", v4_fname)
+        if not os.path.exists(v4_path):
+            v4_path = os.path.join(DATA_DIR, v4_fname)
+        if os.path.exists(v4_path):
+            with open(v4_path) as f:
+                v4data = json.load(f)
+            src = v4data.get("oos") or v4data  # 15M salva direto no root
+            if src.get("n_trades", 0) > 0:
+                oos = src
+                if v4data.get("benchmarks") or src.get("benchmarks"):
+                    benchmark = v4data.get("benchmarks") or src.get("benchmarks")
+                break  # usa o primeiro que tiver trades
 
     candles_map = load_candles_map()
 
