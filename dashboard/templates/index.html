@@ -73,8 +73,8 @@
       <div>
         <!-- Mobile: nome curto | Desktop: nome completo -->
         <h1 class="font-bold text-white text-lg leading-none">
-          <span class="sm:hidden">CCTB <span class="text-indigo-500 text-xs font-bold">V4</span></span>
-          <span class="hidden sm:inline">Claude Code Trading Bot <span class="text-indigo-500 text-xs font-bold">V4</span> <span class="text-gray-600 text-xs font-normal">(11/05/2026)</span></span>
+          <span class="sm:hidden">CCTB <span id="version-badge" class="text-indigo-500 text-xs font-bold">v—</span></span>
+          <span class="hidden sm:inline">Claude Code Trading Bot <span id="version-badge-full" class="text-indigo-500 text-xs font-bold">v—</span> <span class="text-gray-600 text-xs font-normal">(11/05/2026)</span></span>
         </h1>
         <p class="text-xs text-gray-500 hidden sm:block">OKX · Paper Mode</p>
       </div>
@@ -900,6 +900,21 @@
   let _modalSide = '', _modalPair = '';
   let _holdings = {};
   let _balanceUSD = 0;
+
+  // ─── Carregar versão dinâmica ────────────────────────────────────────────
+  async function loadVersion() {
+    try {
+      const res = await fetch('/api/version');
+      const data = await res.json();
+      if (data.version) {
+        document.getElementById('version-badge').textContent = data.version;
+        document.getElementById('version-badge-full').textContent = data.version;
+      }
+    } catch(e) {
+      console.debug('Version load error:', e);
+    }
+  }
+  loadVersion();
 
   // ─── Chart.js — Portfolio ─────────────────────────────────────────────
   const portfolioChart = new Chart(

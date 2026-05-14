@@ -4,6 +4,7 @@ import time
 import json
 import asyncio
 import requests
+import subprocess
 import pandas as pd
 from datetime import datetime
 from typing import List
@@ -860,6 +861,43 @@ async def get_calibration():
         with open(path) as f:
             return json.load(f)
     return {"_available": False}
+
+
+def get_full_version():
+    """
+    Retorna versão completa: vMAJOR.STRATEGY.BUILD
+    BUILD = total de commits do git
+    """
+    import subprocess
+
+    # Ler MAJOR.STRATEGY do arquivo VERSION
+    version_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "VERSION")
+    try:
+        with open(version_file) as f:
+            major_strategy = f.read().strip()
+    except:
+        major_strategy = "4.0"
+
+    # Calcular BUILD = total de commits
+    try:
+        result = subprocess.run(
+            ["git", "rev-list", "--all", "--count"],
+            cwd=os.path.dirname(os.path.dirname(__file__)),
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        build = result.stdout.strip()
+    except:
+        build = "0"
+
+    return f"v{major_strategy}.{build}"
+
+
+@app.get("/api/version")
+async def get_version():
+    """Retorna versão completa vMAJOR.STRATEGY.BUILD"""
+    return {"version": get_full_version()}
 
 
 @app.websocket("/ws")
