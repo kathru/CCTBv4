@@ -1,0 +1,38 @@
+{
+  "timeframe": "15m",
+  "oos_start": "2025-11-14",
+  "oos_end": "2026-05-13",
+  "n_candles_oos": 17281,
+  "n_trades": 2316,
+  "win_rate": 0.4858,
+  "profit_factor": 1.007,
+  "total_return": -0.3545,
+  "max_drawdown": -0.3665,
+  "sharpe": -0.393,
+  "avg_win_usd": 0.0749,
+  "avg_loss_usd": 0.0703,
+  "payoff_ratio": 1.066,
+  "total_fees_usd": 278.5189,
+  "capital_final": 645.49,
+  "benchmarks": {
+    "BTC": -0.1635,
+    "ETH": -0.2889,
+    "SOL": -0.3528,
+    "equal_weight": -0.2684
+  },
+  "exec_stats": {
+    "submitted": 21728,
+    "filled_full": 841,
+    "filled_partial": 3793,
+    "rejected_min": 0,
+    "expired_timeout": 0,
+    "rejected_fill_prob": 18,
+    "fill_rate": 0.213,
+    "avg_slippage_bps": 4.0,
+    "total_slippage_usd": 27.8517,
+    "total_maker_fee": 0.0,
+    "total_taker_fee": 278.5189,
+    "pending_count": 0
+  },
+  "regime_edge_applied": true
+}

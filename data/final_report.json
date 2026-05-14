@@ -1,0 +1,21 @@
+{
+  "oos_return": -0.3545,
+  "oos_max_drawdown": -0.3665,
+  "oos_profit_factor": 1.007,
+  "oos_win_rate": 0.4858,
+  "oos_avg_win_usd": 0.0749,
+  "oos_avg_loss_usd": 0.0703,
+  "oos_payoff_ratio": 1.066,
+  "oos_n_trades": 2316,
+  "oos_sharpe": -0.393,
+  "oos_fees_usd": 278.5189,
+  "oos_period": "2025-11-14 -> 2026-05-13",
+  "timeframe": "15m",
+  "benchmarks": {
+    "BTC": -0.1635,
+    "ETH": -0.2889,
+    "SOL": -0.3528,
+    "equal_weight": -0.2684
+  },
+  "generated_at": "2026-05-14T00:47:41.605707+00:00"
+}
