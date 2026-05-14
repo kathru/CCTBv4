@@ -1246,11 +1246,10 @@
       if (nextNewsMins) {
         const mins = s.next_news_event.mins_to;
         if (mins != null && mins !== '—') {
-          const totalSec = Math.round(Number(mins) * 60);
-          const hh = String(Math.floor(totalSec / 3600)).padStart(2, '0');
-          const mm = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
-          const ss = String(totalSec % 60).padStart(2, '0');
-          nextNewsMins.textContent = `${hh}:${mm}:${ss}`;
+          const totalMin = Math.round(Number(mins));
+          const hh = Math.floor(totalMin / 60);
+          const mm = String(totalMin % 60).padStart(2, '0');
+          nextNewsMins.textContent = `${hh}:${mm}`;
         } else {
           nextNewsMins.textContent = '—';
         }
