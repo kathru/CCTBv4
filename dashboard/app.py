@@ -863,59 +863,24 @@ async def get_calibration():
     return {"_available": False}
 
 
-def _compute_build_number() -> str:
-    """Calcula BUILD = total de commits git. Chamado uma vez no startup."""
-    repo_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    import shutil
-
-    # Caminhos candidatos — shutil.which no startup tem PATH completo
-    git_candidates = []
-    found = shutil.which("git")
-    if found:
-        git_candidates.append(found)
-    if os.name == "nt":
-        for p in [
-            r"C:\Program Files\Git\mingw64\bin\git.exe",
-            r"C:\Program Files\Git\cmd\git.exe",
-            r"C:\Program Files\Git\bin\git.exe",
-            r"C:\Program Files (x86)\Git\cmd\git.exe",
-        ]:
-            if os.path.isfile(p):
-                git_candidates.append(p)
-    git_candidates.append("git")
-
-    for git_cmd in git_candidates:
-        try:
-            r = subprocess.run(
-                [git_cmd, "rev-list", "--all", "--count"],
-                cwd=repo_dir, capture_output=True, text=True, timeout=5
-            )
-            val = r.stdout.strip()
-            if val.isdigit():
-                return val
-        except Exception:
-            continue
-    return "0"
-
-
-def _compute_major_strategy() -> str:
-    version_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "VERSION")
-    try:
-        with open(version_file) as f:
-            return f.read().strip()
-    except Exception:
-        return "4.0"
-
-
-# Calculado uma única vez no startup — evita problema de PATH reduzido em spawned processes
-_BUILD          = _compute_build_number()
-_MAJOR_STRATEGY = _compute_major_strategy()
-_FULL_VERSION   = f"v{_MAJOR_STRATEGY}.{_BUILD}"
-
-
 def get_full_version() -> str:
-    """Retorna versão completa: vMAJOR.STRATEGY.BUILD (pré-calculada no startup)."""
-    return _FULL_VERSION
+    """
+    Retorna versão completa: vMAJOR.STRATEGY.BUILD
+    Lê VERSION e BUILD diretamente de arquivos — zero subprocess, funciona em qualquer OS.
+    BUILD é atualizado automaticamente pelo hook pre-commit do git.
+    """
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    try:
+        with open(os.path.join(root, "VERSION")) as f:
+            major_strategy = f.read().strip()
+    except Exception:
+        major_strategy = "4.0"
+    try:
+        with open(os.path.join(root, "BUILD")) as f:
+            build = f.read().strip()
+    except Exception:
+        build = "0"
+    return f"v{major_strategy}.{build}"
 
 
 @app.get("/api/version")
